@@ -7,6 +7,7 @@ import pytest
 from decision_graph.schema import (DecisionNode, DecisionSimilarity,
                                    ParticipantStance)
 from decision_graph.storage import DecisionGraphStorage
+from deliberation.convergence import ConvergenceDetector
 
 
 @pytest.fixture

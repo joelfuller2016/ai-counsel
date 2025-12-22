@@ -1,4 +1,7 @@
 """Unit tests for DecisionGraphIntegration with maintenance monitoring."""
+import asyncio
+import os
+import tempfile
 from datetime import datetime
 from unittest.mock import patch
 
@@ -8,6 +11,17 @@ from decision_graph.integration import DecisionGraphIntegration
 from decision_graph.schema import DecisionNode
 from decision_graph.storage import DecisionGraphStorage
 from models.schema import ConvergenceInfo, DeliberationResult, Summary
+
+
+@pytest.fixture
+def temp_db():
+    """Create temporary database for testing."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    yield db_path
+    # Cleanup
+    if os.path.exists(db_path):
+        os.unlink(db_path)
 
 
 class TestDecisionGraphIntegrationMaintenance:

@@ -124,7 +124,7 @@ class TestRoundTruncation:
             result_dict["full_debate_truncated"] = True
             result_dict["total_rounds"] = total_rounds
         
-        # Should keep 4 responses (2 rounds × 2 participants)
+        # Should keep 4 responses (2 rounds x 2 participants)
         assert len(result_dict["full_debate"]) == 4
         assert result_dict["total_rounds"] == 4
         
@@ -371,7 +371,7 @@ class TestRoundTruncation:
                 detected=False,
                 detection_round=0,
                 final_similarity=0.0,
-                status="none",
+                status="unknown",
                 scores_by_round=[],
                 per_participant_similarity={},
             ),
