@@ -108,22 +108,11 @@ class DecisionGraphStorage:
             self._conn.row_factory = sqlite3.Row
         return self._conn
 
-    def close(self) -> None:
-        """Close the database connection if it is open."""
-        if self._conn is None:
-            return
-        try:
-            self._conn.close()
-        except Exception as e:
-            logger.warning(f"Error closing database connection: {e}")
-        finally:
-            self._conn = None
-
-    def __del__(self) -> None:
-        try:
-            self.close()
-        except Exception:
-            pass
+    # (preceding code remains unchanged)
+    
+    # The close() and __del__ methods at lines 111-126 would be removed here
+    
+    # (remaining code continues)
 
     @contextmanager
     def transaction(self):
