@@ -1042,6 +1042,11 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
         # In long-running MCP servers, this prevents unbounded growth across deliberations
         self.tool_execution_history = []
 
+        # Reset convergence detector state from previous deliberations
+        # This ensures counters don't carry over and affect convergence detection
+        if self.convergence_detector:
+            self.convergence_detector.reset()
+
         # Track issues encountered during deliberation
         issues_encountered: List[str] = []
         deliberation_start = datetime.now()

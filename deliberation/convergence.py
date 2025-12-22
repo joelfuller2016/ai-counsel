@@ -278,6 +278,16 @@ class ConvergenceDetector:
             f"ConvergenceDetector initialized with {self.backend.__class__.__name__}"
         )
 
+    def reset(self) -> None:
+        """Reset state counters for a new deliberation.
+
+        Should be called at the start of each deliberation to ensure
+        counters from previous deliberations don't affect convergence detection.
+        """
+        self.consecutive_stable_count = 0
+        self.consecutive_divergent_count = 0
+        logger.debug("ConvergenceDetector state reset")
+
     def _select_backend(self) -> SimilarityBackend:
         """
         Select best available similarity backend.
@@ -353,7 +363,7 @@ class ConvergenceDetector:
 
         # Determine convergence status
         threshold = self.config.semantic_similarity_threshold
-        divergence_threshold = getattr(self.config, "divergence_threshold", 0.40)
+        divergence_threshold = self.config.divergence_threshold
 
         if min_similarity >= threshold:
             # All participants converged
