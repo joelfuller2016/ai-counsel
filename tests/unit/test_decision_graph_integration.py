@@ -10,6 +10,16 @@ import pytest
 from decision_graph.integration import DecisionGraphIntegration
 from decision_graph.schema import DecisionNode
 from decision_graph.storage import DecisionGraphStorage
+from models.config import (
+    CLIToolConfig,
+    Config,
+    ConvergenceDetectionConfig,
+    DecisionGraphConfig,
+    DefaultsConfig,
+    DeliberationConfig,
+    EarlyStoppingConfig,
+    StorageConfig,
+)
 from models.schema import ConvergenceInfo, DeliberationResult, Summary
 
 
@@ -22,6 +32,65 @@ def temp_db():
     # Cleanup
     if os.path.exists(db_path):
         os.unlink(db_path)
+
+
+@pytest.fixture
+def decision_graph_config():
+    """Shared config fixture with budget-aware decision graph settings.
+
+    This fixture provides a complete Config object suitable for testing
+    decision graph integration features including tiered formatting and
+    measurement hooks.
+    """
+    return Config(
+        version="1.0",
+        cli_tools={
+            "test": CLIToolConfig(
+                command="test",
+                args=["{prompt}"],
+                timeout=60
+            )
+        },
+        defaults=DefaultsConfig(
+            mode="quick",
+            rounds=2,
+            max_rounds=5,
+            timeout_per_round=120
+        ),
+        storage=StorageConfig(
+            transcripts_dir="transcripts",
+            format="markdown",
+            auto_export=True
+        ),
+        deliberation=DeliberationConfig(
+            convergence_detection=ConvergenceDetectionConfig(
+                enabled=True,
+                semantic_similarity_threshold=0.85,
+                divergence_threshold=0.40,
+                min_rounds_before_check=1,
+                consecutive_stable_rounds=2,
+                stance_stability_threshold=0.80,
+                response_length_drop_threshold=0.40
+            ),
+            early_stopping=EarlyStoppingConfig(
+                enabled=True,
+                threshold=0.66,
+                respect_min_rounds=True
+            ),
+            convergence_threshold=0.8,
+            enable_convergence_detection=True
+        ),
+        decision_graph=DecisionGraphConfig(
+            enabled=True,
+            db_path=":memory:",
+            similarity_threshold=0.6,
+            max_context_decisions=3,
+            compute_similarities=True,
+            context_token_budget=1500,
+            tier_boundaries={"strong": 0.75, "moderate": 0.60},
+            query_window=1000
+        )
+    )
 
 
 class TestDecisionGraphIntegrationMaintenance:
@@ -429,59 +498,9 @@ class TestDecisionGraphIntegrationTieredFormatting:
         return DecisionGraphStorage(":memory:")
 
     @pytest.fixture
-    def config(self):
-        """Create mock config with budget-aware settings."""
-        from models.config import Config, DecisionGraphConfig, DefaultsConfig, StorageConfig, DeliberationConfig, ConvergenceDetectionConfig, EarlyStoppingConfig, CLIToolConfig
-
-        return Config(
-            version="1.0",
-            cli_tools={
-                "test": CLIToolConfig(
-                    command="test",
-                    args=["{prompt}"],
-                    timeout=60
-                )
-            },
-            defaults=DefaultsConfig(
-                mode="quick",
-                rounds=2,
-                max_rounds=5,
-                timeout_per_round=120
-            ),
-            storage=StorageConfig(
-                transcripts_dir="transcripts",
-                format="markdown",
-                auto_export=True
-            ),
-            deliberation=DeliberationConfig(
-                convergence_detection=ConvergenceDetectionConfig(
-                    enabled=True,
-                    semantic_similarity_threshold=0.85,
-                    divergence_threshold=0.40,
-                    min_rounds_before_check=1,
-                    consecutive_stable_rounds=2,
-                    stance_stability_threshold=0.80,
-                    response_length_drop_threshold=0.40
-                ),
-                early_stopping=EarlyStoppingConfig(
-                    enabled=True,
-                    threshold=0.66,
-                    respect_min_rounds=True
-                ),
-                convergence_threshold=0.8,
-                enable_convergence_detection=True
-            ),
-            decision_graph=DecisionGraphConfig(
-                enabled=True,
-                db_path=":memory:",
-                similarity_threshold=0.6,
-                max_context_decisions=3,
-                compute_similarities=True,
-                context_token_budget=1500,
-                tier_boundaries={"strong": 0.75, "moderate": 0.60},
-                query_window=1000
-            )
-        )
+    def config(self, decision_graph_config):
+        """Return shared config fixture with budget-aware settings."""
+        return decision_graph_config
 
     @pytest.fixture
     def integration_with_config(self, storage, config):
@@ -708,59 +727,9 @@ class TestDecisionGraphIntegrationMeasurementHooks:
         return DecisionGraphStorage(":memory:")
 
     @pytest.fixture
-    def config(self):
-        """Create mock config with budget-aware settings."""
-        from models.config import Config, DecisionGraphConfig, DefaultsConfig, StorageConfig, DeliberationConfig, ConvergenceDetectionConfig, EarlyStoppingConfig, CLIToolConfig
-
-        return Config(
-            version="1.0",
-            cli_tools={
-                "test": CLIToolConfig(
-                    command="test",
-                    args=["{prompt}"],
-                    timeout=60
-                )
-            },
-            defaults=DefaultsConfig(
-                mode="quick",
-                rounds=2,
-                max_rounds=5,
-                timeout_per_round=120
-            ),
-            storage=StorageConfig(
-                transcripts_dir="transcripts",
-                format="markdown",
-                auto_export=True
-            ),
-            deliberation=DeliberationConfig(
-                convergence_detection=ConvergenceDetectionConfig(
-                    enabled=True,
-                    semantic_similarity_threshold=0.85,
-                    divergence_threshold=0.40,
-                    min_rounds_before_check=1,
-                    consecutive_stable_rounds=2,
-                    stance_stability_threshold=0.80,
-                    response_length_drop_threshold=0.40
-                ),
-                early_stopping=EarlyStoppingConfig(
-                    enabled=True,
-                    threshold=0.66,
-                    respect_min_rounds=True
-                ),
-                convergence_threshold=0.8,
-                enable_convergence_detection=True
-            ),
-            decision_graph=DecisionGraphConfig(
-                enabled=True,
-                db_path=":memory:",
-                similarity_threshold=0.6,
-                max_context_decisions=3,
-                compute_similarities=True,
-                context_token_budget=1500,
-                tier_boundaries={"strong": 0.75, "moderate": 0.60},
-                query_window=1000
-            )
-        )
+    def config(self, decision_graph_config):
+        """Return shared config fixture with budget-aware settings."""
+        return decision_graph_config
 
     @pytest.fixture
     def integration_with_config(self, storage, config):
@@ -954,10 +923,11 @@ class TestIntegrationShutdownLogic:
             )
             
             decision_id = integration.store_deliberation("Test question", result)
-            
+            assert decision_id is not None
+
             # Give tasks a moment to be created
             await asyncio.sleep(0.05)
-            
+
             # Check if tasks were tracked (may be empty if already completed)
             # The important thing is no crashes
             assert isinstance(integration._enqueue_tasks, set)

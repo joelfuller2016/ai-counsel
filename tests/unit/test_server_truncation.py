@@ -1,6 +1,7 @@
 """Unit tests for server.py round truncation logic."""
 import pytest
 from models.schema import DeliberationResult, RoundResponse, Summary, ConvergenceInfo
+from server import truncate_debate_rounds
 
 
 class TestRoundTruncation:
@@ -19,7 +20,7 @@ class TestRoundTruncation:
                     timestamp=f"2025-01-01T00:0{i}:00",
                 )
             )
-        
+
         result = DeliberationResult(
             status="complete",
             mode="standard",
@@ -42,30 +43,15 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        # Simulate truncation logic from server.py
-        max_rounds = 3
-        result_dict = result.model_dump()
-        round_numbers = sorted({r.round for r in result.full_debate})
-        total_rounds = len(round_numbers)
-        
-        assert total_rounds == 5
-        
-        if total_rounds > max_rounds:
-            rounds_to_keep = set(round_numbers[-max_rounds:])
-            result_dict["full_debate"] = [
-                r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate
-                if r.round in rounds_to_keep
-            ]
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result, max_rounds=3)
+
         # Verify truncation
         assert result_dict["full_debate_truncated"] is True
         assert result_dict["total_rounds"] == 5
         assert len(result_dict["full_debate"]) == 3
-        
+
         # Verify kept rounds are 3, 4, 5
         kept_rounds = {r["round"] for r in result_dict["full_debate"]}
         assert kept_rounds == {3, 4, 5}
@@ -84,7 +70,7 @@ class TestRoundTruncation:
                         timestamp=f"2025-01-01T00:{round_num:02d}:00",
                     )
                 )
-        
+
         result = DeliberationResult(
             status="complete",
             mode="standard",
@@ -107,31 +93,18 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        # Truncate to last 2 rounds
-        max_rounds = 2
-        result_dict = result.model_dump()
-        round_numbers = sorted({r.round for r in result.full_debate})
-        total_rounds = len(round_numbers)
-        
-        if total_rounds > max_rounds:
-            rounds_to_keep = set(round_numbers[-max_rounds:])
-            result_dict["full_debate"] = [
-                r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate
-                if r.round in rounds_to_keep
-            ]
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result, max_rounds=2)
+
         # Should keep 4 responses (2 rounds x 2 participants)
         assert len(result_dict["full_debate"]) == 4
         assert result_dict["total_rounds"] == 4
-        
+
         # Verify kept rounds are 3 and 4
         kept_rounds = {r["round"] for r in result_dict["full_debate"]}
         assert kept_rounds == {3, 4}
-        
+
         # Verify both participants are in kept rounds
         kept_participants = {r["participant"] for r in result_dict["full_debate"]}
         assert kept_participants == {"claude", "gpt4"}
@@ -148,7 +121,7 @@ class TestRoundTruncation:
                     timestamp=f"2025-01-01T00:0{i}:00",
                 )
             )
-        
+
         result = DeliberationResult(
             status="complete",
             mode="quick",
@@ -171,28 +144,13 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        # No truncation needed
-        max_rounds = 3
-        result_dict = result.model_dump()
-        round_numbers = sorted({r.round for r in result.full_debate})
-        total_rounds = len(round_numbers)
-        
-        if total_rounds > max_rounds:
-            rounds_to_keep = set(round_numbers[-max_rounds:])
-            result_dict["full_debate"] = [
-                r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate
-                if r.round in rounds_to_keep
-            ]
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        else:
-            result_dict["full_debate_truncated"] = False
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result, max_rounds=3)
+
         # Verify no truncation
         assert result_dict["full_debate_truncated"] is False
-        assert "total_rounds" not in result_dict or result_dict.get("total_rounds") == 2
+        assert "total_rounds" not in result_dict
         assert len(result_dict["full_debate"]) == 2
 
     def test_truncation_flag_set_correctly(self):
@@ -207,7 +165,7 @@ class TestRoundTruncation:
             )
             for i in range(1, 4)
         ]
-        
+
         result_at_limit = DeliberationResult(
             status="complete",
             mode="quick",
@@ -230,18 +188,10 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        max_rounds = 3
-        result_dict = result_at_limit.model_dump()
-        round_numbers = sorted({r.round for r in result_at_limit.full_debate})
-        total_rounds = len(round_numbers)
-        
-        if total_rounds > max_rounds:
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        else:
-            result_dict["full_debate_truncated"] = False
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result_at_limit, max_rounds=3)
+
         assert result_dict["full_debate_truncated"] is False
 
     def test_truncation_with_single_round(self):
@@ -254,7 +204,7 @@ class TestRoundTruncation:
                 timestamp="2025-01-01T00:01:00",
             )
         ]
-        
+
         result = DeliberationResult(
             status="complete",
             mode="quick",
@@ -277,24 +227,10 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        max_rounds = 3
-        result_dict = result.model_dump()
-        round_numbers = sorted({r.round for r in result.full_debate})
-        total_rounds = len(round_numbers)
-        
-        if total_rounds > max_rounds:
-            rounds_to_keep = set(round_numbers[-max_rounds:])
-            result_dict["full_debate"] = [
-                r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate
-                if r.round in rounds_to_keep
-            ]
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        else:
-            result_dict["full_debate_truncated"] = False
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result, max_rounds=3)
+
         assert result_dict["full_debate_truncated"] is False
         assert len(result_dict["full_debate"]) == 1
 
@@ -310,7 +246,7 @@ class TestRoundTruncation:
                     timestamp=f"2025-01-01T00:0{i}:00",
                 )
             )
-        
+
         result = DeliberationResult(
             status="complete",
             mode="standard",
@@ -333,22 +269,10 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        max_rounds = 2
-        result_dict = result.model_dump()
-        round_numbers = sorted({r.round for r in result.full_debate})
-        total_rounds = len(round_numbers)
-        
-        if total_rounds > max_rounds:
-            rounds_to_keep = set(round_numbers[-max_rounds:])
-            result_dict["full_debate"] = [
-                r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate
-                if r.round in rounds_to_keep
-            ]
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result, max_rounds=2)
+
         # Verify order is preserved (4, 5)
         kept_round_numbers = [r["round"] for r in result_dict["full_debate"]]
         assert kept_round_numbers == [4, 5]
@@ -377,23 +301,9 @@ class TestRoundTruncation:
             ),
             transcript_path="/tmp/test.md",
         )
-        
-        max_rounds = 3
-        result_dict = result.model_dump()
-        round_numbers = sorted({r.round for r in result.full_debate}) if result.full_debate else []
-        total_rounds = len(round_numbers)
-        
-        if total_rounds > max_rounds:
-            rounds_to_keep = set(round_numbers[-max_rounds:])
-            result_dict["full_debate"] = [
-                r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate
-                if r.round in rounds_to_keep
-            ]
-            result_dict["full_debate_truncated"] = True
-            result_dict["total_rounds"] = total_rounds
-        else:
-            result_dict["full_debate_truncated"] = False
-        
+
+        # Use the production truncation helper
+        result_dict = truncate_debate_rounds(result, max_rounds=3)
+
         assert result_dict["full_debate_truncated"] is False
         assert len(result_dict["full_debate"]) == 0

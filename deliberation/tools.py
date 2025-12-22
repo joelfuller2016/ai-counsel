@@ -8,7 +8,7 @@ import subprocess
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
 from pathlib import Path, PurePosixPath
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import ClassVar, Dict, List, Optional, Set, TYPE_CHECKING
 from models.tool_schema import ToolRequest, ToolResult
 
 if TYPE_CHECKING:
@@ -458,15 +458,13 @@ class SearchCodeTool(BaseTool):
     async def _search_with_ripgrep(self, pattern: str, search_path: str) -> ToolResult:
         """Search using ripgrep if available."""
         try:
-            # Check if rg is available
-            subprocess.run(
-                ["rg", "--version"],
-                capture_output=True,
-                timeout=1,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
+            # Check if rg is available (async to avoid blocking event loop)
+            proc = await asyncio.create_subprocess_exec(
+                "rg", "--version",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
+            await asyncio.wait_for(proc.communicate(), timeout=1)
 
             # Build ripgrep command with exclusions
             cmd = [
@@ -677,7 +675,7 @@ class RunCommandTool(BaseTool):
     """Tool for running safe read-only commands."""
 
     # Whitelist of allowed commands (read-only operations)
-    ALLOWED_COMMANDS = {
+    ALLOWED_COMMANDS: ClassVar[Set[str]] = {
         "ls",
         "pwd",
         "cat",
@@ -695,8 +693,8 @@ class RunCommandTool(BaseTool):
         "diff",
     }
 
-    COMMAND_TIMEOUT = 10  # seconds
-    SAFE_GIT_SUBCOMMANDS = {
+    COMMAND_TIMEOUT: ClassVar[int] = 10  # seconds
+    SAFE_GIT_SUBCOMMANDS: ClassVar[Set[str]] = {
         "status",
         "log",
         "diff",
@@ -705,7 +703,7 @@ class RunCommandTool(BaseTool):
         "ls-files",
         "blame",
     }
-    DISALLOWED_FIND_FLAGS = {"-exec", "-execdir", "-ok", "-okdir", "-delete"}
+    DISALLOWED_FIND_FLAGS: ClassVar[Set[str]] = {"-exec", "-execdir", "-ok", "-okdir", "-delete"}
 
     @property
     def name(self) -> str:
