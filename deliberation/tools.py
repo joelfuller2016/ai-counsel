@@ -839,12 +839,19 @@ class RunCommandTool(BaseTool):
                 )
 
         if command == "find":
+            # Check both original case and lowercase versions to prevent case-based bypass
+            original_args = {str(arg) for arg in args}
             lowered_args = {str(arg).lower() for arg in args}
-            blocked = self.DISALLOWED_FIND_FLAGS & lowered_args
-            if blocked:
+            
+            # Check against disallowed flags (which are stored in lowercase)
+            blocked_original = {arg for arg in original_args if arg.lower() in self.DISALLOWED_FIND_FLAGS}
+            blocked_lowered = self.DISALLOWED_FIND_FLAGS & lowered_args
+            
+            # Report the original case flags that were blocked
+            if blocked_original:
                 return (
                     "find flags are not allowed: "
-                    f"{', '.join(sorted(blocked))}."
+                    f"{', '.join(sorted(blocked_original))}."
                 )
 
         if not base_dir:
