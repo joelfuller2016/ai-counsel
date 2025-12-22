@@ -150,6 +150,7 @@ class TestConvergenceDetector:
                             {
                                 "enabled": True,
                                 "semantic_similarity_threshold": 0.85,
+                                "divergence_threshold": 0.40,
                                 "min_rounds_before_check": 2,
                                 "consecutive_stable_rounds": 1,
                             },
@@ -221,6 +222,7 @@ class TestConvergenceDetector:
                             {
                                 "enabled": True,
                                 "semantic_similarity_threshold": 0.85,
+                                "divergence_threshold": 0.40,
                                 "min_rounds_before_check": 2,
                                 "consecutive_stable_rounds": 1,
                             },
@@ -346,7 +348,7 @@ class TestConvergenceDetector:
                             {
                                 "enabled": True,
                                 "semantic_similarity_threshold": 0.85,
-                                "divergence_threshold": 0.95,
+                                "divergence_threshold": 0.40,
                                 "min_rounds_before_check": 2,
                                 "consecutive_stable_rounds": 2,
                             },
@@ -358,11 +360,12 @@ class TestConvergenceDetector:
 
         detector = ConvergenceDetector(config)
 
+        # Use completely different topics to ensure low semantic similarity
         round2 = [
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha response",
+                response="TypeScript is the best programming language for enterprise applications",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -371,7 +374,7 @@ class TestConvergenceDetector:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Beta response",
+                response="Cooking Italian pasta requires fresh ingredients and olive oil",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -380,7 +383,7 @@ class TestConvergenceDetector:
             RoundResponse(
                 round=4,
                 participant="claude@cli",
-                response="Gamma response",
+                response="Mountain hiking in winter demands proper equipment and training",
                 timestamp="2025-01-01T00:02:00",
             )
         ]
@@ -413,7 +416,10 @@ class TestConvergenceDetector:
                             (),
                             {
                                 "enabled": True,
+                                "semantic_similarity_threshold": 0.85,
+                                "divergence_threshold": 0.40,
                                 "min_rounds_before_check": 2,  # Don't check until round 3
+                                "consecutive_stable_rounds": 1,
                             },
                         )()
                     },
@@ -480,12 +486,12 @@ class TestImpasseDetection:
         detector = ConvergenceDetector(config)
         assert detector.consecutive_divergent_count == 0
 
-        # Create two very different responses
+        # Create two completely unrelated responses to ensure divergence
         round2 = [
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha position with unique perspective",
+                response="TypeScript is the best programming language for enterprise applications",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -494,13 +500,13 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Beta position completely different view",
+                response="Cooking Italian pasta requires fresh ingredients and olive oil",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
 
         result = detector.check_convergence(round3, round2, round_number=3)
-        
+
         assert result.status == "diverging"
         assert detector.consecutive_divergent_count == 1
 
@@ -645,12 +651,12 @@ class TestImpasseDetection:
 
         detector1 = ConvergenceDetector(config1)
 
-        # Create diverging responses
+        # Create completely unrelated responses to ensure divergence
         round2 = [
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha",
+                response="TypeScript is the best programming language for enterprise applications",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -659,7 +665,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Zeta",
+                response="Cooking Italian pasta requires fresh ingredients and olive oil",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -668,7 +674,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=4,
                 participant="claude@cli",
-                response="Omega",
+                response="Mountain hiking in winter demands proper equipment and training",
                 timestamp="2025-01-01T00:02:00",
             )
         ]
@@ -709,12 +715,12 @@ class TestImpasseDetection:
 
         detector = ConvergenceDetector(config)
 
-        # Only 2 divergent rounds (threshold is 3)
+        # Only 2 divergent rounds (threshold is 3) - use completely unrelated topics
         round2 = [
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha",
+                response="TypeScript is the best programming language for enterprise applications",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -723,7 +729,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Zeta",
+                response="Cooking Italian pasta requires fresh ingredients and olive oil",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -829,13 +835,24 @@ class TestImpasseDetection:
 
         detector = ConvergenceDetector(config)
 
-        # Create 5 rounds of divergence
-        for i in range(2, 7):
+        # Create 6 rounds of divergence with completely unrelated topics
+        # (rounds 3-7 = 5 divergent checks since min_rounds_before_check=2 skips round 2)
+        divergent_topics = [
+            "TypeScript is the best programming language for enterprise applications",
+            "Cooking Italian pasta requires fresh ingredients and olive oil",
+            "Mountain hiking in winter demands proper equipment and training",
+            "Classical music composition follows strict harmonic principles",
+            "Deep sea diving requires specialized certification and gear",
+            "Ancient Egyptian pyramids demonstrate remarkable engineering",
+            "Quantum computing will revolutionize cryptography and security",
+        ]
+
+        for i in range(2, 8):  # rounds 2-7, but round 2 returns None (min_rounds_before_check)
             curr = [
                 RoundResponse(
                     round=i,
                     participant="claude@cli",
-                    response=f"Divergent response number {i}",
+                    response=divergent_topics[i - 1],
                     timestamp=f"2025-01-01T00:0{i}:00",
                 )
             ]
@@ -843,13 +860,13 @@ class TestImpasseDetection:
                 RoundResponse(
                     round=i - 1,
                     participant="claude@cli",
-                    response=f"Divergent response number {i - 1}",
+                    response=divergent_topics[i - 2],
                     timestamp=f"2025-01-01T00:0{i-1}:00",
                 )
             ]
             result = detector.check_convergence(curr, prev, round_number=i)
 
-        # After 5 divergent rounds, should be impasse
+        # After 5 divergent rounds (3, 4, 5, 6, 7), should be impasse
         assert result.status == "impasse"
         assert detector.consecutive_divergent_count == 5
 
@@ -883,12 +900,12 @@ class TestImpasseDetection:
 
         detector = ConvergenceDetector(config)
 
-        # Two divergent rounds
+        # Two divergent rounds - use completely unrelated topics
         round2 = [
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha position",
+                response="TypeScript is the best programming language for enterprise applications",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -897,7 +914,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Zeta position",
+                response="Cooking Italian pasta requires fresh ingredients and olive oil",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -905,12 +922,12 @@ class TestImpasseDetection:
         detector.check_convergence(round3, round2, round_number=3)
         assert detector.consecutive_divergent_count == 1
 
-        # Then a refining round (moderate similarity)
+        # Then a refining round (moderate similarity - same topic, different wording)
         round4 = [
             RoundResponse(
                 round=4,
                 participant="claude@cli",
-                response="Zeta position with slight modifications",
+                response="Making pasta at home needs quality ingredients like olive oil",
                 timestamp="2025-01-01T00:02:00",
             )
         ]

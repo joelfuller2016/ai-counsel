@@ -831,7 +831,6 @@ class RunCommandTool(BaseTool):
                     "Git subcommand is not allowed. "
                     f"Allowed: {', '.join(sorted(self.SAFE_GIT_SUBCOMMANDS))}."
                 )
-            args = args[1:]
 
         if command == "find":
             lowered_args = {str(arg).lower() for arg in args}
