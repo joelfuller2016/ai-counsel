@@ -1028,7 +1028,7 @@ class TestImpasseDetection:
             )
         ]
 
-        result = detector.check_convergence(round3, round2, round_number=3)
+        detector.check_convergence(round3, round2, round_number=3)
         
         assert detector.consecutive_divergent_count == 0
 
