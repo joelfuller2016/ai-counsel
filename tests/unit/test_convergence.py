@@ -328,6 +328,74 @@ class TestConvergenceDetector:
         assert result.status in ["diverging", "refining"]
         assert result.min_similarity < 0.50  # Very different responses
 
+    def test_detects_impasse_after_consecutive_divergence(self):
+        """Should detect impasse after repeated divergent rounds."""
+        from models.schema import RoundResponse
+
+        config = type(
+            "Config",
+            (),
+            {
+                "deliberation": type(
+                    "Delib",
+                    (),
+                    {
+                        "convergence_detection": type(
+                            "Conv",
+                            (),
+                            {
+                                "enabled": True,
+                                "semantic_similarity_threshold": 0.85,
+                                "divergence_threshold": 0.95,
+                                "min_rounds_before_check": 2,
+                                "consecutive_stable_rounds": 2,
+                            },
+                        )()
+                    },
+                )()
+            },
+        )()
+
+        detector = ConvergenceDetector(config)
+
+        round2 = [
+            RoundResponse(
+                round=2,
+                participant="claude@cli",
+                response="Alpha response",
+                timestamp="2025-01-01T00:00:00",
+            )
+        ]
+
+        round3 = [
+            RoundResponse(
+                round=3,
+                participant="claude@cli",
+                response="Beta response",
+                timestamp="2025-01-01T00:01:00",
+            )
+        ]
+
+        round4 = [
+            RoundResponse(
+                round=4,
+                participant="claude@cli",
+                response="Gamma response",
+                timestamp="2025-01-01T00:02:00",
+            )
+        ]
+
+        result_round3 = detector.check_convergence(
+            current_round=round3, previous_round=round2, round_number=3
+        )
+        assert result_round3.status == "diverging"
+
+        result_round4 = detector.check_convergence(
+            current_round=round4, previous_round=round3, round_number=4
+        )
+        assert result_round4.converged is False
+        assert result_round4.status == "impasse"
+
     def test_skips_check_before_min_rounds(self):
         """Should not check convergence before min_rounds_before_check."""
         from models.schema import RoundResponse

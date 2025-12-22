@@ -1,4 +1,5 @@
 """Unit tests for tool execution infrastructure."""
+import shutil
 import pytest
 from deliberation.tools import BaseTool, ToolExecutor
 from models.tool_schema import ToolRequest, ToolResult
@@ -301,6 +302,28 @@ class TestReadFileTool:
         assert result.error is None
 
     @pytest.mark.asyncio
+    async def test_read_file_respects_working_directory(self, tool, tmp_path):
+        """Test read_file blocks access outside working_directory."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        inside = workspace / "inside.txt"
+        inside.write_text("inside")
+        outside = tmp_path / "outside.txt"
+        outside.write_text("outside")
+
+        allowed = await tool.execute(
+            {"path": "inside.txt", "working_directory": str(workspace)}
+        )
+        assert allowed.success is True
+        assert "inside" in allowed.output
+
+        blocked = await tool.execute(
+            {"path": str(outside), "working_directory": str(workspace)}
+        )
+        assert blocked.success is False
+        assert "working directory" in blocked.error.lower() or "access denied" in blocked.error.lower()
+
+    @pytest.mark.asyncio
     async def test_read_nonexistent_file_returns_error(self, tool):
         """Test reading nonexistent file returns error."""
         result = await tool.execute(
@@ -438,6 +461,26 @@ class TestSearchCodeTool:
         """Test tool has correct name."""
         assert tool.name == "search_code"
 
+    @pytest.mark.asyncio
+    async def test_search_blocks_outside_working_directory(self, tool, tmp_path):
+        """Test search_code blocks access outside working_directory."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+        (outside_dir / "file.py").write_text("secret")
+
+        result = await tool.execute(
+            {
+                "pattern": "secret",
+                "path": str(outside_dir),
+                "working_directory": str(workspace),
+            }
+        )
+
+        assert result.success is False
+        assert "working directory" in result.error.lower() or "access denied" in result.error.lower()
+
 
 class TestListFilesTool:
     """Tests for ListFilesTool implementation."""
@@ -502,6 +545,23 @@ class TestListFilesTool:
         """Test tool has correct name."""
         assert tool.name == "list_files"
 
+    @pytest.mark.asyncio
+    async def test_list_files_blocks_traversal_pattern(self, tool, tmp_path):
+        """Test list_files blocks traversal patterns when working_directory set."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+
+        result = await tool.execute(
+            {
+                "pattern": "../*.py",
+                "path": ".",
+                "working_directory": str(workspace),
+            }
+        )
+
+        assert result.success is False
+        assert "path traversal" in result.error.lower()
+
 
 class TestRunCommandTool:
     """Tests for RunCommandTool implementation."""
@@ -516,6 +576,8 @@ class TestRunCommandTool:
     @pytest.mark.asyncio
     async def test_run_whitelisted_command(self, tool):
         """Test running whitelisted command succeeds."""
+        if shutil.which("pwd") is None:
+            pytest.skip("pwd command not available on this platform")
         result = await tool.execute({"command": "pwd", "args": []})
 
         assert result.success is True
@@ -524,6 +586,8 @@ class TestRunCommandTool:
     @pytest.mark.asyncio
     async def test_run_command_with_args(self, tool, tmp_path):
         """Test running command with arguments."""
+        if shutil.which("cat") is None:
+            pytest.skip("cat command not available on this platform")
         # Create a test file
         test_file = tmp_path / "test.txt"
         test_file.write_text("test content")
@@ -565,6 +629,45 @@ class TestRunCommandTool:
     async def test_tool_name(self, tool):
         """Test tool has correct name."""
         assert tool.name == "run_command"
+
+    @pytest.mark.asyncio
+    async def test_run_command_blocks_git_mutation(self, tool):
+        """Test git subcommands outside allowlist are blocked."""
+        result = await tool.execute({"command": "git", "args": ["checkout", "main"]})
+
+        assert result.success is False
+        assert "git subcommand" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_run_command_blocks_find_exec(self, tool):
+        """Test find -exec is blocked."""
+        result = await tool.execute(
+            {"command": "find", "args": [".", "-exec", "rm", "-rf", "{}", ";"]}
+        )
+
+        assert result.success is False
+        assert "find flags" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_run_command_blocks_absolute_paths_outside_workdir(
+        self, tool, tmp_path
+    ):
+        """Test absolute paths outside working_directory are blocked."""
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        outside = tmp_path / "outside.txt"
+        outside.write_text("data")
+
+        result = await tool.execute(
+            {
+                "command": "cat",
+                "args": [str(outside)],
+                "working_directory": str(workspace),
+            }
+        )
+
+        assert result.success is False
+        assert "absolute paths outside" in result.error.lower()
 
 
 class TestGetFileTreeTool:

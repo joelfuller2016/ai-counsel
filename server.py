@@ -45,7 +45,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(log_file),
+        logging.FileHandler(log_file, encoding="utf-8"),
         logging.StreamHandler(sys.stderr),  # Explicitly use stderr
     ],
 )
@@ -545,13 +545,16 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         # Truncate full_debate for MCP response if needed (to avoid token limit)
         max_rounds = getattr(config, "mcp", {}).get("max_rounds_in_response", 3)
         result_dict = result.model_dump()
+        round_numbers = sorted({r.round for r in result.full_debate})
+        total_rounds = len(round_numbers)
 
-        if len(result.full_debate) > max_rounds:
-            total_rounds = len(result.full_debate)
+        if total_rounds > max_rounds:
+            rounds_to_keep = set(round_numbers[-max_rounds:])
             # Convert RoundResponse objects to dicts for the truncated slice
             result_dict["full_debate"] = [
                 r.model_dump() if hasattr(r, "model_dump") else r
-                for r in result.full_debate[-max_rounds:]
+                for r in result.full_debate
+                if r.round in rounds_to_keep
             ]
             result_dict["full_debate_truncated"] = True
             result_dict["total_rounds"] = total_rounds

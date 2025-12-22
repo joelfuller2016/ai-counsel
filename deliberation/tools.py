@@ -2,10 +2,12 @@
 import asyncio
 import logging
 import json
+import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from pathlib import Path
+from fnmatch import fnmatch
+from pathlib import Path, PurePosixPath
 from typing import Dict, List, Optional, TYPE_CHECKING
 from models.tool_schema import ToolRequest, ToolResult
 
@@ -13,6 +15,75 @@ if TYPE_CHECKING:
     from models.config import ToolSecurityConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_match_text(value: str) -> str:
+    normalized = value.replace("\\", "/").strip()
+    if os.name == "nt":
+        normalized = normalized.lower()
+    return normalized
+
+
+def _normalize_path(path: Path) -> str:
+    try:
+        resolved = path.resolve()
+    except Exception:
+        resolved = path
+    if hasattr(resolved, "as_posix"):
+        path_str = resolved.as_posix()
+    else:
+        path_str = str(resolved)
+    return _normalize_match_text(path_str)
+
+
+def _normalize_pattern(pattern: str) -> str:
+    return _normalize_match_text(pattern)
+
+
+def _path_contains_segment(path_str: str, segment: str) -> bool:
+    segment = segment.strip("/")
+    if not segment:
+        return False
+    normalized_path = f"/{path_str.strip('/')}/"
+    if "/" in segment:
+        return f"/{segment.strip('/')}/" in normalized_path
+    return f"/{segment}/" in normalized_path
+
+
+def _is_within_directory(path: Path, base_dir: Path) -> bool:
+    try:
+        path.relative_to(base_dir)
+        return True
+    except ValueError:
+        return False
+
+
+def _resolve_working_directory(working_directory: str) -> Path:
+    base_dir = Path(working_directory).resolve()
+    if not base_dir.exists() or not base_dir.is_dir():
+        raise ValueError(f"Working directory not found: {base_dir}")
+    return base_dir
+
+
+def _resolve_path_within_working_dir(
+    path_str: str, working_directory: Optional[str]
+) -> Path:
+    path = Path(path_str)
+    if working_directory:
+        base_dir = _resolve_working_directory(working_directory)
+        candidate = path if path.is_absolute() else base_dir / path
+        resolved = candidate.resolve()
+        if not _is_within_directory(resolved, base_dir):
+            raise ValueError(
+                f"Access denied: Path escapes working directory: {path_str}"
+            )
+        return resolved
+    return path.resolve()
+
+
+def _pattern_has_traversal(pattern: str) -> bool:
+    parts = re.split(r"[\\/]+", pattern)
+    return ".." in parts
 
 
 def is_path_excluded(path: Path, exclude_patterns: List[str]) -> bool:
@@ -26,23 +97,44 @@ def is_path_excluded(path: Path, exclude_patterns: List[str]) -> bool:
     Returns:
         True if path should be excluded, False otherwise
     """
-    path_str = str(path)
+    path_str = _normalize_path(path)
+    normalized_path = f"/{path_str.strip('/')}/"
+    basename = PurePosixPath(path_str).name
 
     for pattern in exclude_patterns:
+        normalized_pattern = _normalize_pattern(pattern)
+        if not normalized_pattern:
+            continue
+
         # Remove trailing ** for directory matching
-        if pattern.endswith("/**"):
-            dir_pattern = pattern[:-3]
-            # Check if path starts with this directory
-            if path_str.startswith(dir_pattern) or f"/{dir_pattern}" in path_str:
+        if normalized_pattern.endswith("/**"):
+            dir_pattern = normalized_pattern[:-3].strip("/")
+            if _path_contains_segment(path_str, dir_pattern):
                 return True
-        elif pattern.endswith("/"):
-            # Directory pattern - check if path is within this directory
-            if path_str.startswith(pattern) or f"/{pattern}" in path_str:
+            continue
+        if normalized_pattern.endswith("/"):
+            dir_pattern = normalized_pattern.rstrip("/")
+            if _path_contains_segment(path_str, dir_pattern):
                 return True
-        else:
-            # Exact match or glob pattern
-            if pattern in path_str:
+            continue
+
+        # Glob pattern matching
+        if any(ch in normalized_pattern for ch in ("*", "?", "[")):
+            if (
+                fnmatch(path_str, normalized_pattern)
+                or fnmatch(path_str, f"*/{normalized_pattern}")
+                or fnmatch(basename, normalized_pattern)
+            ):
                 return True
+            continue
+
+        # Exact segment or basename match
+        if _path_contains_segment(path_str, normalized_pattern):
+            return True
+        if normalized_path.endswith(f"/{normalized_pattern}/"):
+            return True
+        if basename == normalized_pattern:
+            return True
 
     return False
 
@@ -156,27 +248,15 @@ class ToolExecutor:
                 error=f"Tool '{request.name}' is not registered",
             )
 
-        # Change to working directory if specified
-        original_dir = None
-        if working_directory:
-            import os
-
-            original_dir = os.getcwd()
-            try:
-                os.chdir(working_directory)
-                logger.info(
-                    f"Tool execution: changed to working directory: {working_directory}"
-                )
-            except Exception as e:
-                return ToolResult(
-                    tool_name=request.name,
-                    success=False,
-                    output=None,
-                    error=f"Failed to change to working directory '{working_directory}': {e}",
-                )
+        effective_working_directory = working_directory
+        if not effective_working_directory:
+            effective_working_directory = request.arguments.get("working_directory")
 
         try:
-            result = await tool.execute(request.arguments)
+            execution_arguments = dict(request.arguments)
+            if effective_working_directory:
+                execution_arguments["working_directory"] = effective_working_directory
+            result = await tool.execute(execution_arguments)
             return result
         except Exception as e:
             logger.error(f"Tool execution failed: {e}", exc_info=True)
@@ -186,18 +266,6 @@ class ToolExecutor:
                 output=None,
                 error=f"{type(e).__name__}: {str(e)}",
             )
-        finally:
-            # Restore original directory
-            if original_dir:
-                try:
-                    import os
-
-                    os.chdir(original_dir)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to restore working directory to {original_dir}: {e}",
-                        exc_info=True,
-                    )
 
 
 class ReadFileTool(BaseTool):
@@ -232,6 +300,7 @@ class ReadFileTool(BaseTool):
             ToolResult with file contents or error
         """
         path_str = arguments.get("path")
+        working_directory = arguments.get("working_directory")
         if not path_str:
             return ToolResult(
                 tool_name=self.name,
@@ -241,7 +310,7 @@ class ReadFileTool(BaseTool):
             )
 
         try:
-            path = Path(path_str).resolve()
+            path = _resolve_path_within_working_dir(path_str, working_directory)
 
             # Check if path is excluded
             if self.exclude_patterns and is_path_excluded(path, self.exclude_patterns):
@@ -282,6 +351,13 @@ class ReadFileTool(BaseTool):
                 tool_name=self.name, success=True, output=content, error=None
             )
 
+        except ValueError as e:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output=None,
+                error=str(e),
+            )
         except UnicodeDecodeError as e:
             return ToolResult(
                 tool_name=self.name,
@@ -329,6 +405,7 @@ class SearchCodeTool(BaseTool):
         """
         pattern = arguments.get("pattern")
         search_path = arguments.get("path", ".")
+        working_directory = arguments.get("working_directory")
 
         if not pattern:
             return ToolResult(
@@ -339,14 +416,31 @@ class SearchCodeTool(BaseTool):
             )
 
         try:
+            resolved_path = _resolve_path_within_working_dir(
+                search_path, working_directory
+            )
+
             # Try ripgrep first (faster)
-            result = await self._search_with_ripgrep(pattern, search_path)
-            if result:
+            result = await self._search_with_ripgrep(
+                pattern, str(resolved_path)
+            )
+            if result and result.success:
                 return result
+            if result and not result.success:
+                logger.warning(
+                    f"Ripgrep search failed ({result.error}); falling back to Python regex"
+                )
 
             # Fallback to Python regex
-            return await self._search_with_python(pattern, search_path)
+            return await self._search_with_python(pattern, str(resolved_path))
 
+        except ValueError as e:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output=None,
+                error=str(e),
+            )
         except Exception as e:
             return ToolResult(
                 tool_name=self.name,
@@ -359,7 +453,14 @@ class SearchCodeTool(BaseTool):
         """Search using ripgrep if available."""
         try:
             # Check if rg is available
-            subprocess.run(["rg", "--version"], capture_output=True, timeout=1)
+            subprocess.run(
+                ["rg", "--version"],
+                capture_output=True,
+                timeout=1,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
 
             # Build ripgrep command with exclusions
             cmd = [
@@ -389,6 +490,8 @@ class SearchCodeTool(BaseTool):
                 cmd,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=10,
             )
 
@@ -409,10 +512,11 @@ class SearchCodeTool(BaseTool):
                     error=f"Search error: {proc.stderr}",
                 )
 
+            output = proc.stdout.strip() if proc.stdout else ""
             return ToolResult(
                 tool_name=self.name,
                 success=True,
-                output=proc.stdout.strip(),
+                output=output,
                 error=None,
             )
 
@@ -507,9 +611,18 @@ class ListFilesTool(BaseTool):
         """
         pattern = arguments.get("pattern", "*")
         search_path = arguments.get("path", ".")
+        working_directory = arguments.get("working_directory")
 
         try:
-            path = Path(search_path).resolve()
+            if working_directory and _pattern_has_traversal(pattern):
+                return ToolResult(
+                    tool_name=self.name,
+                    success=False,
+                    output=None,
+                    error="Path traversal is not allowed in list_files patterns.",
+                )
+
+            path = _resolve_path_within_working_dir(search_path, working_directory)
 
             if not path.exists():
                 return ToolResult(
@@ -568,8 +681,6 @@ class RunCommandTool(BaseTool):
         "find",
         "git",
         "grep",
-        "awk",
-        "sed",
         "sort",
         "uniq",
         "tree",
@@ -579,6 +690,16 @@ class RunCommandTool(BaseTool):
     }
 
     COMMAND_TIMEOUT = 10  # seconds
+    SAFE_GIT_SUBCOMMANDS = {
+        "status",
+        "log",
+        "diff",
+        "show",
+        "rev-parse",
+        "ls-files",
+        "blame",
+    }
+    DISALLOWED_FIND_FLAGS = {"-exec", "-execdir", "-ok", "-okdir", "-delete"}
 
     @property
     def name(self) -> str:
@@ -596,6 +717,7 @@ class RunCommandTool(BaseTool):
         """
         command = arguments.get("command")
         args = arguments.get("args", [])
+        working_directory = arguments.get("working_directory")
 
         if not command:
             return ToolResult(
@@ -614,6 +736,37 @@ class RunCommandTool(BaseTool):
                 error=f"Command '{command}' is not whitelisted. Allowed: {', '.join(sorted(self.ALLOWED_COMMANDS))}",
             )
 
+        if not isinstance(args, list):
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output=None,
+                error="Arguments must be a list",
+            )
+
+        base_dir = None
+        if working_directory:
+            try:
+                base_dir = _resolve_working_directory(working_directory)
+            except ValueError as e:
+                return ToolResult(
+                    tool_name=self.name,
+                    success=False,
+                    output=None,
+                    error=str(e),
+                )
+
+        validation_error = self._validate_command_args(
+            command, args, base_dir
+        )
+        if validation_error:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output=None,
+                error=validation_error,
+            )
+
         try:
             # Execute command
             proc = await asyncio.create_subprocess_exec(
@@ -621,6 +774,7 @@ class RunCommandTool(BaseTool):
                 *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                cwd=str(base_dir) if base_dir else None,
             )
 
             try:
@@ -660,6 +814,56 @@ class RunCommandTool(BaseTool):
                 output=None,
                 error=f"{type(e).__name__}: {str(e)}",
             )
+
+    def _validate_command_args(
+        self, command: str, args: list, base_dir: Optional[Path]
+    ) -> Optional[str]:
+        if command == "git":
+            if not args:
+                return "Git subcommand is required."
+            first_arg = args[0]
+            if first_arg.startswith("-"):
+                if first_arg not in {"--version", "-v"}:
+                    return "Only 'git --version' is allowed without a subcommand."
+                return None
+            if first_arg not in self.SAFE_GIT_SUBCOMMANDS:
+                return (
+                    "Git subcommand is not allowed. "
+                    f"Allowed: {', '.join(sorted(self.SAFE_GIT_SUBCOMMANDS))}."
+                )
+            args = args[1:]
+
+        if command == "find":
+            lowered_args = {str(arg).lower() for arg in args}
+            blocked = self.DISALLOWED_FIND_FLAGS & lowered_args
+            if blocked:
+                return (
+                    "find flags are not allowed: "
+                    f"{', '.join(sorted(blocked))}."
+                )
+
+        if not base_dir:
+            return None
+
+        for arg in args:
+            if not isinstance(arg, str):
+                continue
+            if arg.startswith("-"):
+                continue
+
+            if _pattern_has_traversal(arg):
+                return "Path traversal is not allowed in command arguments."
+
+            candidate = Path(arg)
+            if candidate.is_absolute():
+                resolved = candidate.resolve()
+                if not _is_within_directory(resolved, base_dir):
+                    return (
+                        "Absolute paths outside the working directory "
+                        "are not allowed."
+                    )
+
+        return None
 
 
 class GetFileTreeTool(BaseTool):

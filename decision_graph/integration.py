@@ -698,15 +698,26 @@ class DecisionGraphIntegration:
 
     def __del__(self):
         """Cleanup on destruction - attempt graceful shutdown if event loop available."""
-        if self.worker and self.worker.running:
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(self.shutdown())
-                else:
-                    # Try to run shutdown synchronously
-                    loop.run_until_complete(self.shutdown())
-            except Exception as e:
-                logger.warning(
-                    f"Could not gracefully shutdown worker in destructor: {e}"
-                )
+        if not self.worker or not self.worker.running:
+            return
+
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            return
+
+        if loop.is_closed():
+            return
+
+        try:
+            if loop.is_running():
+                loop.create_task(self.shutdown())
+            else:
+                # Try to run shutdown synchronously
+                loop.run_until_complete(self.shutdown())
+        except RuntimeError:
+            return
+        except Exception as e:
+            logger.warning(
+                f"Could not gracefully shutdown worker in destructor: {e}"
+            )
