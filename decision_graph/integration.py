@@ -734,7 +734,7 @@ class DecisionGraphIntegration:
 
         try:
             if loop.is_running():
-                loop.create_task(self.shutdown())
+                asyncio.create_task(self.shutdown())
             else:
                 # Try to run shutdown synchronously
                 loop.run_until_complete(self.shutdown())
