@@ -351,19 +351,19 @@ class ReadFileTool(BaseTool):
                 tool_name=self.name, success=True, output=content, error=None
             )
 
-        except ValueError as e:
-            return ToolResult(
-                tool_name=self.name,
-                success=False,
-                output=None,
-                error=str(e),
-            )
         except UnicodeDecodeError as e:
             return ToolResult(
                 tool_name=self.name,
                 success=False,
                 output=None,
                 error=f"Cannot read binary file: {e}",
+            )
+        except ValueError as e:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output=None,
+                error=str(e),
             )
         except Exception as e:
             return ToolResult(
