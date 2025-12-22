@@ -108,12 +108,6 @@ class DecisionGraphStorage:
             self._conn.row_factory = sqlite3.Row
         return self._conn
 
-    # (preceding code remains unchanged)
-    
-    # The close() and __del__ methods at lines 111-126 would be removed here
-    
-    # (remaining code continues)
-
     @contextmanager
     def transaction(self):
         """Context manager for database transactions with automatic rollback on error."""
