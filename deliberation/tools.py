@@ -120,11 +120,17 @@ def is_path_excluded(path: Path, exclude_patterns: List[str]) -> bool:
 
         # Glob pattern matching
         if any(ch in normalized_pattern for ch in ("*", "?", "[")):
-            if (
-                fnmatch(path_str, normalized_pattern)
-                or fnmatch(path_str, f"*/{normalized_pattern}")
-                or fnmatch(basename, normalized_pattern)
-            ):
+            # Check if pattern matches the full path
+            if fnmatch(path_str, normalized_pattern):
+                return True
+            # For patterns with path separators (e.g., "src/*.py"), try matching
+            # as a suffix of the path. For simple patterns (e.g., "test_*"),
+            # only match the basename to avoid matching parent directory names.
+            if "/" in normalized_pattern:
+                if fnmatch(path_str, f"*/{normalized_pattern}"):
+                    return True
+            # Always check basename for glob patterns
+            if fnmatch(basename, normalized_pattern):
                 return True
             continue
 
