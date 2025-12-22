@@ -256,9 +256,7 @@ class DecisionGraphIntegration:
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
                             # Ensure worker is started and enqueue
-                            async def enqueue_job():
-                                if not self._worker_enabled or self._shutting_down:
-                                    return
+                            async def enqueue_job() -> None:
                                 await self.ensure_worker_started()
                                 if (
                                     not self._worker_enabled
