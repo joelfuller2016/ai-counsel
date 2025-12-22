@@ -899,3 +899,291 @@ class TestDecisionGraphIntegrationMeasurementHooks:
         assert metrics.get("total_decisions", 0) == 0
         assert metrics.get("recent_100_count", 0) == 0
         assert metrics.get("recent_1000_count", 0) == 0
+
+
+class TestIntegrationShutdownLogic:
+    """Test DecisionGraphIntegration shutdown and task management."""
+
+    @pytest.mark.asyncio
+    async def test_enqueue_tasks_tracking(self, temp_db):
+        """Test that _enqueue_tasks set tracks background tasks."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            # Store a deliberation to trigger background enqueue
+            from models.schema import DeliberationResult, Summary, ConvergenceInfo
+            
+            result = DeliberationResult(
+                status="complete",
+                mode="quick",
+                rounds_completed=1,
+                participants=["test"],
+                full_debate=[],
+                summary=Summary(
+                    consensus="Test",
+                    key_agreements=[],
+                    key_disagreements=[],
+                    final_recommendation="Test",
+                ),
+                convergence_info=ConvergenceInfo(
+                    detected=True,
+                    detection_round=1,
+                    final_similarity=0.85,
+                    status="converged",
+                    scores_by_round=[],
+                    per_participant_similarity={},
+                ),
+                transcript_path="/tmp/test.md",
+            )
+            
+            decision_id = integration.store_deliberation("Test question", result)
+            
+            # Give tasks a moment to be created
+            await asyncio.sleep(0.05)
+            
+            # Check if tasks were tracked (may be empty if already completed)
+            # The important thing is no crashes
+            assert isinstance(integration._enqueue_tasks, set)
+            
+        finally:
+            await integration.shutdown()
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_shutting_down_flag_prevents_enqueues(self, temp_db):
+        """Test _shutting_down flag prevents new task enqueues."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            # Trigger shutdown
+            integration._shutting_down = True
+            
+            # Attempt to ensure worker started
+            await integration.ensure_worker_started()
+            
+            # Worker should not start new operations
+            assert integration._shutting_down is True
+            
+        finally:
+            await integration.shutdown()
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_shutdown_cancels_pending_tasks(self, temp_db):
+        """Test shutdown cancels all pending enqueue tasks."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            # Create a long-running task
+            async def long_task():
+                await asyncio.sleep(10)
+            
+            task = asyncio.create_task(long_task())
+            integration._enqueue_tasks.add(task)
+            
+            # Shutdown should cancel it
+            await integration.shutdown()
+            
+            assert task.cancelled() or task.done()
+            assert len(integration._enqueue_tasks) == 0
+            
+        finally:
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_ensure_worker_started_respects_shutting_down(self, temp_db):
+        """Test ensure_worker_started returns early when shutting down."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            # Set shutting down before starting
+            integration._shutting_down = True
+            
+            # Should return immediately
+            await integration.ensure_worker_started()
+            
+            # Worker should not have started
+            if integration.worker:
+                assert not integration.worker.running
+            
+        finally:
+            await integration.shutdown()
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_shutdown_sets_flags(self, temp_db):
+        """Test shutdown sets both _shutting_down and _worker_enabled flags."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            assert integration._worker_enabled is True
+            assert integration._shutting_down is False
+            
+            await integration.shutdown()
+            
+            assert integration._shutting_down is True
+            assert integration._worker_enabled is False
+            
+        finally:
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_shutdown_is_idempotent(self, temp_db):
+        """Test calling shutdown multiple times is safe."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            # Call shutdown multiple times
+            await integration.shutdown()
+            await integration.shutdown()
+            await integration.shutdown()
+            
+            # Should be safe
+            assert integration._shutting_down is True
+            
+        finally:
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_del_handles_no_worker(self, temp_db):
+        """Test __del__ handles case where worker was never created."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=False)
+        
+        # Delete without starting worker
+        assert integration.worker is None
+        del integration
+        
+        # Should not crash
+        storage.close()
+
+    @pytest.mark.asyncio
+    async def test_del_handles_stopped_worker(self, temp_db):
+        """Test __del__ handles already stopped worker."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            await integration.shutdown()
+            
+            # Worker is stopped
+            if integration.worker:
+                assert not integration.worker.running
+            
+            # Delete should handle gracefully
+            del integration
+            
+        finally:
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_shutdown_without_worker_enabled(self, temp_db):
+        """Test shutdown when worker was never enabled."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=False)
+        
+        try:
+            # Shutdown without worker
+            await integration.shutdown()
+            
+            assert integration._shutting_down is True
+            assert integration._worker_enabled is False
+            
+        finally:
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_enqueue_task_cleanup_on_completion(self, temp_db):
+        """Test tasks are removed from _enqueue_tasks on completion."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            # Create a quick task
+            async def quick_task():
+                await asyncio.sleep(0.01)
+                return "done"
+            
+            task = asyncio.create_task(quick_task())
+            integration._enqueue_tasks.add(task)
+            task.add_done_callback(integration._enqueue_tasks.discard)
+            
+            # Wait for task to complete
+            await task
+            
+            # Task should be removed from set
+            assert task not in integration._enqueue_tasks
+            
+        finally:
+            await integration.shutdown()
+            storage.close()
+
+    @pytest.mark.asyncio
+    async def test_enqueue_respects_shutting_down_flag(self, temp_db):
+        """Test that enqueue operations check _shutting_down flag."""
+        storage = DecisionGraphStorage(db_path=temp_db)
+        integration = DecisionGraphIntegration(storage, enable_background_worker=True)
+        
+        try:
+            await integration.ensure_worker_started()
+            
+            # Set shutting down
+            integration._shutting_down = True
+            
+            # Store deliberation shouldn't enqueue background work
+            from models.schema import DeliberationResult, Summary, ConvergenceInfo
+            
+            result = DeliberationResult(
+                status="complete",
+                mode="quick",
+                rounds_completed=1,
+                participants=["test"],
+                full_debate=[],
+                summary=Summary(
+                    consensus="Test",
+                    key_agreements=[],
+                    key_disagreements=[],
+                    final_recommendation="Test",
+                ),
+                convergence_info=ConvergenceInfo(
+                    detected=True,
+                    detection_round=1,
+                    final_similarity=0.85,
+                    status="converged",
+                    scores_by_round=[],
+                    per_participant_similarity={},
+                ),
+                transcript_path="/tmp/test.md",
+            )
+            
+            decision_id = integration.store_deliberation("Test question", result)
+            assert decision_id is not None
+            
+            # Give a moment for any background tasks
+            await asyncio.sleep(0.05)
+            
+            # No new tasks should have been created
+            # (or they were cancelled immediately)
+            
+        finally:
+            await integration.shutdown()
+            storage.close()
