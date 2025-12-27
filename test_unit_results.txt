@@ -1,0 +1,1149 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.2, pytest-8.4.1, pluggy-1.6.0 -- C:\Program Files\Python311\python.exe
+cachedir: .pytest_cache
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: C:\Users\joelf\ai-counsel
+configfile: pytest.ini
+plugins: dash-3.1.0, anyio-4.9.0, langsmith-0.3.45, asyncio-1.0.0, benchmark-5.1.0, cov-6.2.1, docker-3.1.2, mock-3.14.1, timeout-2.4.0, xdist-3.7.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 917 items
+
+tests/unit/test_adapters.py::TestBaseCLIAdapter::test_cannot_instantiate_base_adapter PASSED [  0%]
+tests/unit/test_adapters.py::TestBaseCLIAdapter::test_subclass_must_implement_parse_output PASSED [  0%]
+tests/unit/test_adapters.py::TestClaudeAdapter::test_adapter_initialization PASSED [  0%]
+tests/unit/test_adapters.py::TestClaudeAdapter::test_invoke_success PASSED [  0%]
+tests/unit/test_adapters.py::TestClaudeAdapter::test_invoke_timeout PASSED [  0%]
+tests/unit/test_adapters.py::TestClaudeAdapter::test_invoke_process_error PASSED [  0%]
+tests/unit/test_adapters.py::TestClaudeAdapter::test_parse_output_extracts_response PASSED [  0%]
+tests/unit/test_adapters.py::TestCodexAdapter::test_adapter_initialization PASSED [  0%]
+tests/unit/test_adapters.py::TestCodexAdapter::test_invoke_success PASSED [  0%]
+tests/unit/test_adapters.py::TestCodexAdapter::test_invoke_timeout PASSED [  1%]
+tests/unit/test_adapters.py::TestCodexAdapter::test_invoke_process_error PASSED [  1%]
+tests/unit/test_adapters.py::TestCodexAdapter::test_parse_output_returns_cleaned_text PASSED [  1%]
+tests/unit/test_adapters.py::TestGeminiAdapter::test_adapter_initialization PASSED [  1%]
+tests/unit/test_adapters.py::TestGeminiAdapter::test_invoke_success PASSED [  1%]
+tests/unit/test_adapters.py::TestGeminiAdapter::test_invoke_timeout PASSED [  1%]
+tests/unit/test_adapters.py::TestGeminiAdapter::test_invoke_process_error PASSED [  1%]
+tests/unit/test_adapters.py::TestGeminiAdapter::test_parse_output_returns_cleaned_text PASSED [  1%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_adapter_initialization PASSED [  1%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_invoke_success PASSED [  2%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_invoke_timeout PASSED [  2%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_invoke_process_error PASSED [  2%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_parse_output_returns_cleaned_text PASSED [  2%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_droid_caches_skip_permissions_success PASSED [  2%]
+tests/unit/test_adapters.py::TestDroidAdapter::test_droid_does_not_cache_auto_success PASSED [  2%]
+tests/unit/test_adapters.py::TestCodexReasoningEffort::test_valid_reasoning_efforts PASSED [  2%]
+tests/unit/test_adapters.py::TestCodexReasoningEffort::test_reasoning_effort_substituted_into_placeholder PASSED [  2%]
+tests/unit/test_adapters.py::TestCodexReasoningEffort::test_invalid_reasoning_effort_raises_valueerror PASSED [  2%]
+tests/unit/test_adapters.py::TestCodexReasoningEffort::test_default_reasoning_effort_used_when_none PASSED [  3%]
+tests/unit/test_adapters.py::TestCodexReasoningEffort::test_reasoning_effort_overrides_default PASSED [  3%]
+tests/unit/test_adapters.py::TestCodexReasoningEffort::test_empty_reasoning_effort_when_no_default PASSED [  3%]
+tests/unit/test_adapters.py::TestDroidReasoningEffort::test_valid_reasoning_efforts PASSED [  3%]
+tests/unit/test_adapters.py::TestDroidReasoningEffort::test_reasoning_effort_injected_as_r_flag PASSED [  3%]
+tests/unit/test_adapters.py::TestDroidReasoningEffort::test_invalid_reasoning_effort_raises_valueerror PASSED [  3%]
+tests/unit/test_adapters.py::TestDroidReasoningEffort::test_reasoning_effort_off_injected PASSED [  3%]
+tests/unit/test_adapters.py::TestDroidReasoningEffort::test_reasoning_effort_with_permission_degradation PASSED [  3%]
+tests/unit/test_adapters.py::TestDroidReasoningEffort::test_none_reasoning_effort_uses_empty_string PASSED [  3%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_claude_code_adapter PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_passes_default_reasoning_effort_from_cli_adapter_config PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_passes_none_reasoning_effort_when_not_specified PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_passes_default_reasoning_effort_to_droid PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_codex_adapter PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_gemini_adapter PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_droid_adapter PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_llamacpp_adapter PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_llamacpp_adapter_with_cli_adapter_config PASSED [  4%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_lmstudio_adapter PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_rejects_cli_config_for_lmstudio PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_ollama_adapter PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_rejects_cli_config_for_ollama PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_openrouter_adapter PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_rejects_cli_config_for_openrouter PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_adapter_with_default_timeout PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_adapter_invalid_cli PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_adapter_with_cli_adapter_config PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_create_adapter_with_http_adapter_config_unknown_adapter PASSED [  5%]
+tests/unit/test_adapters.py::TestAdapterFactory::test_factory_type_checking PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_runtime_reasoning_effort_overrides_config_default PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_config_default_used_when_runtime_is_none PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_empty_string_when_no_default_and_no_runtime PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_droid_runtime_overrides_config_default PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_droid_config_default_used_when_runtime_none PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_codex_invalid_reasoning_effort_validation PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_droid_invalid_reasoning_effort_validation PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_codex_invalid_runtime_reasoning_effort_raises PASSED [  6%]
+tests/unit/test_adapters.py::TestConfigBasedReasoningDefaults::test_droid_invalid_runtime_reasoning_effort_raises PASSED [  7%]
+tests/unit/test_adapters.py::TestWorkingDirectoryIsolation::test_invoke_uses_working_directory_as_cwd PASSED [  7%]
+tests/unit/test_adapters.py::TestWorkingDirectoryIsolation::test_invoke_without_working_directory_uses_current_dir PASSED [  7%]
+tests/unit/test_adapters.py::TestWorkingDirectoryIsolation::test_gemini_adapter_uses_working_directory PASSED [  7%]
+tests/unit/test_base_http_adapter.py::TestBaseHTTPAdapter::test_cannot_instantiate_base_adapter PASSED [  7%]
+tests/unit/test_base_http_adapter.py::TestBaseHTTPAdapter::test_subclass_must_implement_build_request PASSED [  7%]
+tests/unit/test_base_http_adapter.py::TestBaseHTTPAdapter::test_subclass_must_implement_parse_response PASSED [  7%]
+tests/unit/test_base_http_adapter.py::TestBaseHTTPAdapter::test_complete_subclass_can_be_instantiated PASSED [  7%]
+tests/unit/test_base_http_adapter.py::TestBaseHTTPAdapter::test_base_url_trailing_slash_removed PASSED [  7%]
+tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_success PASSED [  8%]
+tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_with_context PASSED [  8%]
+tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_retries_on_503 PASSED [  8%]
+tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_no_retry_on_400 FAILED [  8%]
+tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_retries_on_network_error PASSED [  8%]
+tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_timeout_error PASSED [  8%]
+tests/unit/test_cache.py::TestLRUCache::test_init_valid_maxsize PASSED   [  8%]
+tests/unit/test_cache.py::TestLRUCache::test_init_invalid_maxsize PASSED [  8%]
+tests/unit/test_cache.py::TestLRUCache::test_put_and_get PASSED          [  8%]
+tests/unit/test_cache.py::TestLRUCache::test_get_nonexistent_key PASSED  [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_put_update_existing_key PASSED [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_lru_eviction PASSED         [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_lru_ordering_with_get PASSED [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_ttl_expiration PASSED       [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_ttl_update_on_put PASSED    [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_ttl_removal_on_update_to_no_ttl PASSED [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_invalidate_existing_key PASSED [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_invalidate_nonexistent_key PASSED [  9%]
+tests/unit/test_cache.py::TestLRUCache::test_clear PASSED                [ 10%]
+tests/unit/test_cache.py::TestLRUCache::test_statistics_hits_and_misses PASSED [ 10%]
+tests/unit/test_cache.py::TestLRUCache::test_statistics_evictions PASSED [ 10%]
+tests/unit/test_cache.py::TestLRUCache::test_statistics_size PASSED      [ 10%]
+tests/unit/test_cache.py::TestLRUCache::test_statistics_hit_rate_zero_requests PASSED [ 10%]
+tests/unit/test_cache.py::TestLRUCache::test_reset_stats PASSED          [ 10%]
+tests/unit/test_cache.py::TestLRUCache::test_expired_item_counts_as_miss PASSED [ 10%]
+tests/unit/test_cache.py::TestSimilarityCache::test_init_defaults PASSED [ 10%]
+tests/unit/test_cache.py::TestSimilarityCache::test_init_custom_params PASSED [ 10%]
+tests/unit/test_cache.py::TestSimilarityCache::test_hash_question_consistency PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_hash_question_uniqueness PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_query_cache_miss PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_query_cache_hit PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_query_cache_different_params_different_keys PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_query_cache_ttl_expiration PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_embedding_cache_miss PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_embedding_cache_hit PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_embedding_cache_no_ttl PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_invalidate_all_queries PASSED [ 11%]
+tests/unit/test_cache.py::TestSimilarityCache::test_invalidate_all_queries_sets_timestamp PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_invalidate_all PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_get_stats_empty_cache PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_get_stats_with_data PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_get_stats_after_invalidation PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_reset_stats PASSED   [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_embedding_version_in_key PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_large_result_caching PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_lru_eviction_in_query_cache PASSED [ 12%]
+tests/unit/test_cache.py::TestSimilarityCache::test_lru_eviction_in_embedding_cache PASSED [ 13%]
+tests/unit/test_cache.py::TestSimilarityCache::test_cache_with_special_characters_in_question PASSED [ 13%]
+tests/unit/test_cache.py::TestSimilarityCache::test_cache_with_unicode_question PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_search_similar_decisions_when_query_provided PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_respect_custom_threshold_when_provided PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_respect_custom_limit_when_provided PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_output_json_format_when_format_json_specified PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_output_table_format_when_format_table_specified PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_output_summary_format_when_format_summary_specified PASSED [ 13%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_fail_when_query_parameter_missing PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_use_custom_database_path_when_db_option_provided PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphSimilarCommand::test_should_handle_exception_and_exit_with_error PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphContradictionsCommand::test_should_find_contradictions_when_invoked PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphContradictionsCommand::test_should_filter_by_scope_when_scope_provided PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphContradictionsCommand::test_should_respect_custom_threshold_when_provided PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphContradictionsCommand::test_should_output_json_format_when_format_json_specified PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphContradictionsCommand::test_should_output_summary_format_when_format_summary_specified PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphContradictionsCommand::test_should_handle_exception_and_exit_with_error PASSED [ 14%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_trace_timeline_when_id_provided PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_include_related_when_related_flag_set PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_output_json_format_when_format_json_specified PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_output_summary_format_when_format_summary_specified PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_display_related_decisions_when_related_flag_and_data_present PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_fail_when_id_parameter_missing PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_handle_value_error_for_nonexistent_decision PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphTimelineCommand::test_should_handle_generic_exception_and_exit_with_error PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_export_to_json_format_when_format_json_specified PASSED [ 15%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_export_to_graphml_format_when_format_graphml_specified PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_export_to_dot_format_when_format_dot_specified PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_export_to_markdown_format_when_format_markdown_specified PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_write_to_file_when_output_option_provided PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_output_to_stdout_when_no_output_option PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_use_custom_database_path_when_db_option_provided PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_exit_with_error_when_no_decisions_found PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestGraphExportCommand::test_should_handle_exception_and_exit_with_error PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestErrorHandlingAndEdgeCases::test_should_handle_missing_database_file PASSED [ 16%]
+tests/unit/test_cli_graph.py::TestErrorHandlingAndEdgeCases::test_should_handle_invalid_format_choice PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestErrorHandlingAndEdgeCases::test_should_handle_invalid_threshold_type PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestErrorHandlingAndEdgeCases::test_should_handle_invalid_limit_type PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestErrorHandlingAndEdgeCases::test_should_handle_empty_query_string PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestErrorHandlingAndEdgeCases::test_should_handle_empty_results_gracefully PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestHelpTextAndDocumentation::test_should_display_help_for_graph_group PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestHelpTextAndDocumentation::test_should_display_help_for_similar_command PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestHelpTextAndDocumentation::test_should_display_help_for_contradictions_command PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestHelpTextAndDocumentation::test_should_display_help_for_timeline_command PASSED [ 17%]
+tests/unit/test_cli_graph.py::TestHelpTextAndDocumentation::test_should_display_help_for_export_command PASSED [ 17%]
+tests/unit/test_config.py::TestConfigLoading::test_load_default_config PASSED [ 18%]
+tests/unit/test_config.py::TestConfigLoading::test_cli_tool_config_structure PASSED [ 18%]
+tests/unit/test_config.py::TestConfigLoading::test_defaults_loaded PASSED [ 18%]
+tests/unit/test_config.py::TestConfigLoading::test_storage_config_loaded PASSED [ 18%]
+tests/unit/test_config.py::TestConfigLoading::test_invalid_config_path_raises_error PASSED [ 18%]
+tests/unit/test_config.py::TestCLIAdapterConfig::test_valid_cli_adapter_config PASSED [ 18%]
+tests/unit/test_config.py::TestCLIAdapterConfig::test_cli_adapter_requires_command PASSED [ 18%]
+tests/unit/test_config.py::TestCLIAdapterConfig::test_cli_adapter_default_reasoning_effort_defaults_to_none PASSED [ 18%]
+tests/unit/test_config.py::TestCLIAdapterConfig::test_cli_adapter_default_reasoning_effort_accepts_string PASSED [ 18%]
+tests/unit/test_config.py::TestCLIAdapterConfig::test_cli_adapter_default_reasoning_effort_serializes PASSED [ 19%]
+tests/unit/test_config.py::TestCLIAdapterConfig::test_config_yaml_has_reasoning_effort_placeholder PASSED [ 19%]
+tests/unit/test_config.py::TestHTTPAdapterConfig::test_valid_http_adapter_config PASSED [ 19%]
+tests/unit/test_config.py::TestHTTPAdapterConfig::test_http_adapter_with_api_key_env_var PASSED [ 19%]
+tests/unit/test_config.py::TestHTTPAdapterConfig::test_http_adapter_requires_base_url PASSED [ 19%]
+tests/unit/test_config.py::TestHTTPAdapterConfig::test_http_adapter_missing_api_key_env_var_becomes_none PASSED [ 19%]
+tests/unit/test_config.py::TestHTTPAdapterConfig::test_http_adapter_missing_base_url_env_var_raises_error PASSED [ 19%]
+tests/unit/test_config.py::TestAdapterConfig::test_adapter_config_discriminates_cli_type PASSED [ 19%]
+tests/unit/test_config.py::TestAdapterConfig::test_adapter_config_discriminates_http_type PASSED [ 19%]
+tests/unit/test_config.py::TestAdapterConfig::test_invalid_adapter_type_raises_error PASSED [ 20%]
+tests/unit/test_config.py::TestConfigLoader::test_load_config_with_adapters_section PASSED [ 20%]
+tests/unit/test_config.py::TestConfigLoader::test_load_config_with_cli_tools_emits_warning PASSED [ 20%]
+tests/unit/test_config.py::TestConfigLoader::test_load_config_fails_without_adapter_section PASSED [ 20%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_relative_to_project_root PASSED [ 20%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_absolute_unchanged FAILED [ 20%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_with_env_var FAILED [ 20%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_with_relative_env_var PASSED [ 20%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_parent_directory PASSED [ 20%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_subdirectory PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_missing_env_var PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_multiple_env_vars PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_default_value PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_cwd_independence PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_home_directory_expansion PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_validation_fields PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_invalid_similarity_threshold_still_validates_path PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_decision_graph_config_budget_fields PASSED [ 21%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_decision_graph_config_tier_boundaries_validation PASSED [ 22%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_decision_graph_config_query_window_validation PASSED [ 22%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_decision_graph_config_context_token_budget_validation PASSED [ 22%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_decision_graph_config_backward_compatibility PASSED [ 22%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_decision_graph_config_deprecated_threshold PASSED [ 22%]
+tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_config_yaml_loads_new_parameters FAILED [ 22%]
+tests/unit/test_config.py::TestFileTreeConfig::test_file_tree_config_defaults PASSED [ 22%]
+tests/unit/test_config.py::TestFileTreeConfig::test_file_tree_config_custom_values PASSED [ 22%]
+tests/unit/test_config.py::TestFileTreeConfig::test_file_tree_config_max_depth_validation PASSED [ 22%]
+tests/unit/test_config.py::TestFileTreeConfig::test_file_tree_config_max_files_validation PASSED [ 23%]
+tests/unit/test_config.py::TestFileTreeConfig::test_file_tree_config_enabled_field PASSED [ 23%]
+tests/unit/test_config.py::TestFileTreeConfig::test_deliberation_config_has_file_tree PASSED [ 23%]
+tests/unit/test_config.py::TestFileTreeConfig::test_deliberation_config_custom_file_tree PASSED [ 23%]
+tests/unit/test_config.py::TestFileTreeConfig::test_config_yaml_loads_file_tree FAILED [ 23%]
+tests/unit/test_convergence.py::TestJaccardBackend::test_identical_text_returns_one PASSED [ 23%]
+tests/unit/test_convergence.py::TestJaccardBackend::test_completely_different_text_returns_zero PASSED [ 23%]
+tests/unit/test_convergence.py::TestJaccardBackend::test_partial_overlap PASSED [ 23%]
+tests/unit/test_convergence.py::TestJaccardBackend::test_case_insensitive PASSED [ 23%]
+tests/unit/test_convergence.py::TestJaccardBackend::test_handles_empty_strings PASSED [ 23%]
+tests/unit/test_convergence.py::TestTFIDFBackend::test_import_skipped_if_sklearn_missing SKIPPED [ 24%]
+tests/unit/test_convergence.py::TestTFIDFBackend::test_identical_text_returns_one PASSED [ 24%]
+tests/unit/test_convergence.py::TestTFIDFBackend::test_semantic_similarity PASSED [ 24%]
+tests/unit/test_convergence.py::TestSentenceTransformerBackend::test_identical_text_returns_one PASSED [ 24%]
+tests/unit/test_convergence.py::TestSentenceTransformerBackend::test_semantic_understanding PASSED [ 24%]
+tests/unit/test_convergence.py::TestConvergenceDetector::test_detects_convergence_all_participants_stable PASSED [ 24%]
+tests/unit/test_convergence.py::TestConvergenceDetector::test_no_convergence_when_opinions_change PASSED [ 24%]
+tests/unit/test_convergence.py::TestConvergenceDetector::test_detects_divergence_with_different_opinions PASSED [ 24%]
+tests/unit/test_convergence.py::TestConvergenceDetector::test_detects_impasse_after_consecutive_divergence PASSED [ 24%]
+tests/unit/test_convergence.py::TestConvergenceDetector::test_skips_check_before_min_rounds PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_consecutive_divergent_count_increments_on_divergence PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_consecutive_divergent_count_resets_on_convergence PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_consecutive_divergent_count_resets_on_refining PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_impasse_threshold_calculation PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_impasse_not_triggered_before_threshold PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_status_progression_to_impasse PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_impasse_with_different_config_values PASSED [ 25%]
+tests/unit/test_convergence.py::TestImpasseDetection::test_impasse_interruption_resets_counter PASSED [ 25%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_initialize_maintenance_on_startup PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_track_decision_count_on_store PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_log_stats_every_100_decisions PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_warn_when_approaching_archival_threshold PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_not_warn_when_below_threshold PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_log_growth_analysis_every_500_decisions PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_should_handle_stats_collection_errors_gracefully PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_get_graph_stats_returns_stats PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_get_graph_stats_handles_errors_gracefully PASSED [ 26%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_health_check_returns_healthy_status PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_health_check_detects_unhealthy_status PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_health_check_handles_errors_gracefully PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_periodic_checks_use_decision_count_not_db_count PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMaintenance::test_stats_logging_includes_all_metrics PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_uses_budget_config PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_returns_tiered_format PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_logs_metrics PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_respects_token_budget PASSED [ 27%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_empty_db_returns_empty PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_handles_config_none_gracefully PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_get_context_logs_database_size PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationTieredFormatting::test_backward_compatibility_with_old_params PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMeasurementHooks::test_measurement_hooks_logged PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMeasurementHooks::test_measurement_hooks_include_tokens PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMeasurementHooks::test_measurement_hooks_db_size_logged PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMeasurementHooks::test_measurement_hooks_format PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMeasurementHooks::test_get_graph_metrics_returns_detailed_stats PASSED [ 28%]
+tests/unit/test_decision_graph_integration.py::TestDecisionGraphIntegrationMeasurementHooks::test_get_graph_metrics_handles_empty_db PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_enqueue_tasks_tracking PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_shutting_down_flag_prevents_enqueues PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_shutdown_cancels_pending_tasks PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_ensure_worker_started_respects_shutting_down PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_shutdown_sets_flags PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_shutdown_is_idempotent PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_del_handles_no_worker PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_del_handles_stopped_worker PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_shutdown_without_worker_enabled PASSED [ 29%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_enqueue_task_cleanup_on_completion PASSED [ 30%]
+tests/unit/test_decision_graph_integration.py::TestIntegrationShutdownLogic::test_enqueue_respects_shutting_down_flag PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_init_with_cache_enabled_default PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_init_with_cache_disabled PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_init_with_custom_cache PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_find_relevant_decisions_cache_miss_then_hit PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_find_relevant_decisions_different_params_share_cache PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_find_relevant_decisions_cache_disabled PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_find_relevant_decisions_empty_result_cached PASSED [ 30%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_find_relevant_decisions_cached_decision_deleted PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_invalidate_cache PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_invalidate_cache_with_cache_disabled PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_get_cache_stats_enabled PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_get_cache_stats_disabled PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_cache_ttl_expiration PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_get_enriched_context_uses_cache PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_cache_hit_rate_tracking PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_empty_query_question_bypasses_cache PASSED [ 31%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverCacheIntegration::test_no_decisions_in_storage_cached PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_strong_tier PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_moderate_tier PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_brief_tier PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_respects_token_budget PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_returns_metrics PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_empty_input PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverTieredFormatting::test_format_context_tiered_all_below_noise_floor PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverAdaptiveK::test_adaptive_k_small_db_exploration PASSED [ 32%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverAdaptiveK::test_adaptive_k_medium_db_balanced PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverAdaptiveK::test_adaptive_k_large_db_precision PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverAdaptiveK::test_adaptive_k_boundary_conditions PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverAdaptiveK::test_adaptive_k_empty_db PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverConfidenceRanking::test_find_relevant_decisions_returns_scores PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverConfidenceRanking::test_find_relevant_decisions_adaptive_k PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverConfidenceRanking::test_find_relevant_decisions_no_threshold_filter PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverConfidenceRanking::test_find_relevant_decisions_noise_floor_only PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestDecisionRetrieverConfidenceRanking::test_find_relevant_decisions_includes_metadata PASSED [ 33%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_get_enriched_context_uses_tiered_formatting PASSED [ 34%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_get_enriched_context_returns_tiered_context PASSED [ 34%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_get_enriched_context_backward_compat_format_context PASSED [ 34%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_format_context_still_works_with_nodes PASSED [ 34%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_get_enriched_context_handles_score_tuples PASSED [ 34%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_get_enriched_context_uses_default_tier_boundaries PASSED [ 34%]
+tests/unit/test_decision_graph_retrieval.py::TestGetEnrichedContextTieredIntegration::test_get_enriched_context_uses_default_token_budget PASSED [ 34%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_creation_valid_data PASSED [ 34%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_generates_unique_uuid PASSED [ 34%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_requires_question PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_question_min_length PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_requires_timestamp PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_requires_consensus PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_requires_convergence_status PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_requires_participants PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_requires_transcript_path PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_participants_is_list PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_winning_option_optional PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_winning_option_can_be_set PASSED [ 35%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_metadata_defaults_to_empty_dict PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_metadata_can_be_set PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestDecisionNode::test_decision_node_with_complex_data PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_creation_valid_data PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_requires_decision_id PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_requires_participant PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_requires_final_position PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_vote_option_optional PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_confidence_optional PASSED [ 36%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_rationale_optional PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_confidence_valid_range PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_confidence_too_low PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_confidence_too_high PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_with_all_vote_fields PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestParticipantStance::test_participant_stance_with_partial_vote_fields PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_creation PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_requires_source_id PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_requires_target_id PASSED [ 37%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_requires_score PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_score_valid_range PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_score_too_low PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_score_too_high PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_computed_at_defaults PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_computed_at_can_be_set PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_with_identical_ids PASSED [ 38%]
+tests/unit/test_decision_graph_schema.py::TestDecisionSimilarity::test_decision_similarity_edge_cases PASSED [ 38%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_initializes_with_memory_db PASSED [ 38%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_initializes_with_file_path PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_creates_parent_directory_if_missing PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_creates_tables_on_init PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_creates_indexes PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_enables_foreign_keys PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionGraphStorageInitialization::test_storage_context_manager PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_save_decision_node PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_save_decision_node_returns_id PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_decision_node_by_id PASSED [ 39%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_decision_node_missing_returns_none PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_decision_node_preserves_timestamp PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_decision_node_preserves_participants_list PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_decision_node_preserves_winning_option PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_decision_node_preserves_metadata PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_save_duplicate_id_raises_error PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_all_decisions_empty PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_all_decisions_returns_all PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_all_decisions_ordered_by_timestamp PASSED [ 40%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_all_decisions_respects_limit PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestDecisionNodeCRUD::test_get_all_decisions_respects_offset PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_save_participant_stance PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_save_stance_requires_valid_decision_id PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_get_participant_stances_empty PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_get_participant_stances PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_get_participant_stances_preserves_vote_data PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_get_participant_stances_handles_none_values PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_get_participant_stances_ordered_by_participant PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestParticipantStanceCRUD::test_multiple_stances_per_decision PASSED [ 41%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_save_similarity PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_save_similarity_requires_valid_source_id PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_save_similarity_requires_valid_target_id PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_save_similarity_upsert_behavior PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_get_similar_decisions_empty PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_get_similar_decisions_returns_matches PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_get_similar_decisions_respects_threshold PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_get_similar_decisions_ordered_by_score PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_get_similar_decisions_respects_limit PASSED [ 42%]
+tests/unit/test_decision_graph_storage.py::TestDecisionSimilarityCRUD::test_get_similar_decisions_returns_decision_nodes PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestStorageEdgeCases::test_close_connection PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestStorageEdgeCases::test_close_idempotent PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestStorageEdgeCases::test_empty_participants_list PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestStorageEdgeCases::test_long_text_fields PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestStorageEdgeCases::test_unicode_text_fields PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestStorageEdgeCases::test_transaction_rollback_on_error PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_consecutive_divergent_count_increments_on_divergence FAILED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_consecutive_divergent_count_resets_on_convergence PASSED [ 43%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_consecutive_divergent_count_resets_on_refining PASSED [ 44%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_threshold_calculation FAILED [ 44%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_not_triggered_before_threshold FAILED [ 44%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_status_progression_to_impasse PASSED [ 44%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_with_different_config_values FAILED [ 44%]
+tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_interruption_resets_counter FAILED [ 44%]
+tests/unit/test_early_stopping.py::TestEarlyStopping::test_early_stopping_when_all_models_want_to_stop PASSED [ 44%]
+tests/unit/test_early_stopping.py::TestEarlyStopping::test_early_stopping_respects_min_rounds PASSED [ 44%]
+tests/unit/test_early_stopping.py::TestEarlyStopping::test_early_stopping_threshold_not_met PASSED [ 44%]
+tests/unit/test_early_stopping.py::TestEarlyStopping::test_early_stopping_disabled PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_engine_initialization PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_execute_round_single_participant PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_execute_round_multiple_participants PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_execute_round_includes_previous_context PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_execute_round_adapter_error_handling PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_execute_round_passes_correct_model PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngine::test_execute_round_timestamp_format PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngineMultiRound::test_execute_multiple_rounds PASSED [ 45%]
+tests/unit/test_engine.py::TestDeliberationEngineMultiRound::test_execute_context_builds_across_rounds PASSED [ 46%]
+tests/unit/test_engine.py::TestDeliberationEngineMultiRound::test_quick_mode_overrides_rounds PASSED [ 46%]
+tests/unit/test_engine.py::TestDeliberationEngineMultiRound::test_engine_saves_transcript PASSED [ 46%]
+tests/unit/test_engine.py::TestEngineReasoningEffort::test_reasoning_effort_passed_to_adapter PASSED [ 46%]
+tests/unit/test_engine.py::TestEngineReasoningEffort::test_reasoning_effort_none_passed_when_not_set PASSED [ 46%]
+tests/unit/test_engine.py::TestEngineReasoningEffort::test_different_participants_different_reasoning_efforts PASSED [ 46%]
+tests/unit/test_engine.py::TestEngineReasoningEffort::test_reasoning_effort_in_full_deliberation PASSED [ 46%]
+tests/unit/test_engine.py::TestEngineReasoningEffort::test_reasoning_effort_logged PASSED [ 46%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_from_response_valid_json PASSED [ 46%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_from_response_no_vote PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_from_response_invalid_json PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_from_response_missing_fields PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_confidence_out_of_range PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_with_multiple_vote_markers PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_prefers_last_marker_over_first PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_parse_vote_handles_latex_wrapper PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_execute_round_collects_votes PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteParsing::test_execute_aggregates_voting_results PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_parse_vote_failure_reason_response_too_short PASSED [ 47%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_parse_vote_failure_reason_tool_focus_no_vote PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_parse_vote_failure_reason_no_vote_marker PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_response_too_short PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_tool_focus_no_vote PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_no_vote_marker PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_invalid_json PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_validation_error PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_type_error PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_create_abstain_vote_unknown_reason PASSED [ 48%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_aggregate_votes_creates_abstains_for_failed_votes PASSED [ 49%]
+tests/unit/test_engine.py::TestVoteAbstainFallback::test_aggregate_votes_excludes_abstains_when_disabled PASSED [ 49%]
+tests/unit/test_engine.py::TestEngineWithTools::test_tool_execution_timeout PASSED [ 49%]
+tests/unit/test_engine.py::TestEngineWithTools::test_tool_history_cleared_between_deliberations PASSED [ 49%]
+tests/unit/test_engine.py::TestEngineWithTools::test_tool_history_memory_bounded PASSED [ 49%]
+tests/unit/test_engine.py::TestVotingPrompts::test_build_voting_instructions PASSED [ 49%]
+tests/unit/test_engine.py::TestVotingPrompts::test_enhance_prompt_with_voting PASSED [ 49%]
+tests/unit/test_engine.py::TestVoteGrouping::test_group_similar_vote_options_exact_match PASSED [ 49%]
+tests/unit/test_engine.py::TestVoteGrouping::test_group_similar_vote_options_no_grouping_without_backend PASSED [ 49%]
+tests/unit/test_engine.py::TestVoteGrouping::test_group_similar_vote_options_single_option PASSED [ 50%]
+tests/unit/test_engine.py::TestVoteGrouping::test_aggregate_votes_different_options_not_merged PASSED [ 50%]
+tests/unit/test_engine.py::TestVoteGrouping::test_aggregate_votes_respects_intent PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_context_truncates_large_tool_outputs PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_context_includes_only_recent_rounds PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_context_size_bounded_across_rounds PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_truncate_output_short_text PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_truncate_output_long_text PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_truncate_output_none PASSED [ 50%]
+tests/unit/test_engine.py::TestEngineContextEfficiency::test_build_context_with_current_round_num PASSED [ 51%]
+tests/unit/test_exporters.py::TestToJson::test_should_export_decisions_to_json_when_no_similarities PASSED [ 51%]
+tests/unit/test_exporters.py::TestToJson::test_should_include_similarities_when_provided PASSED [ 51%]
+tests/unit/test_exporters.py::TestToJson::test_should_handle_empty_decisions_list PASSED [ 51%]
+tests/unit/test_exporters.py::TestToJson::test_should_preserve_none_values_in_json PASSED [ 51%]
+tests/unit/test_exporters.py::TestToGraphml::test_should_export_graphml_structure_when_decisions_provided PASSED [ 51%]
+tests/unit/test_exporters.py::TestToGraphml::test_should_escape_xml_special_chars_in_graphml PASSED [ 51%]
+tests/unit/test_exporters.py::TestToGraphml::test_should_include_edges_when_similarities_provided PASSED [ 51%]
+tests/unit/test_exporters.py::TestToGraphml::test_should_handle_empty_decisions_in_graphml PASSED [ 51%]
+tests/unit/test_exporters.py::TestToGraphml::test_should_format_timestamps_as_isoformat_in_graphml PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_create_valid_dot_graph_structure PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_create_nodes_with_correct_labels PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_color_nodes_by_convergence_status PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_include_edges_for_high_similarity_scores PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_handle_empty_decisions_in_dot PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_use_white_for_unknown_convergence_status PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_map_convergence_status_to_color_correctly[converged-lightgreen] PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_map_convergence_status_to_color_correctly[refining-lightyellow] PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_map_convergence_status_to_color_correctly[diverging-lightcoral] PASSED [ 52%]
+tests/unit/test_exporters.py::TestToDot::test_should_map_convergence_status_to_color_correctly[unanimous_consensus-lightblue] PASSED [ 53%]
+tests/unit/test_exporters.py::TestToDot::test_should_map_convergence_status_to_color_correctly[majority_decision-lightcyan] PASSED [ 53%]
+tests/unit/test_exporters.py::TestToDot::test_should_map_convergence_status_to_color_correctly[tie-lightgray] PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_create_markdown_report_structure PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_escape_markdown_special_chars PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_include_decision_metadata_fields PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_display_na_for_none_winning_option PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_include_relationships_table_when_similarities_provided PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_limit_relationships_to_top_20 PASSED [ 53%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_handle_empty_decisions_in_markdown PASSED [ 54%]
+tests/unit/test_exporters.py::TestToMarkdown::test_should_not_include_relationships_section_when_none_provided PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_create_ascii_table_with_box_drawing PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_include_all_results_up_to_10 PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_limit_to_10_results PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_handle_empty_results_list PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_truncate_long_text_in_table PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_format_score_as_percentage PASSED [ 54%]
+tests/unit/test_exporters.py::TestToSummaryTable::test_should_truncate_convergence_status_to_11_chars PASSED [ 54%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_escape_ampersand PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_escape_less_than PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_escape_greater_than PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_escape_double_quote PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_escape_single_quote PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_escape_all_special_chars_combined PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_handle_empty_string PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeXml::test_should_handle_string_without_special_chars PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeMarkdown::test_should_escape_pipe_character PASSED [ 55%]
+tests/unit/test_exporters.py::TestEscapeMarkdown::test_should_replace_newlines_with_spaces PASSED [ 56%]
+tests/unit/test_exporters.py::TestEscapeMarkdown::test_should_handle_multiple_pipes_and_newlines PASSED [ 56%]
+tests/unit/test_exporters.py::TestEscapeMarkdown::test_should_handle_empty_string PASSED [ 56%]
+tests/unit/test_exporters.py::TestEscapeMarkdown::test_should_handle_string_without_special_chars PASSED [ 56%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_not_truncate_when_under_max_length PASSED [ 56%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_truncate_when_over_max_length PASSED [ 56%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_exact_max_length PASSED [ 56%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_empty_string PASSED [ 56%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_max_length_of_3 PASSED [ 56%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_truncate_at_correct_position PASSED [ 57%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_various_text_and_length_combinations[Hello-10-Hello] PASSED [ 57%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_various_text_and_length_combinations[Hello World-8-Hello...] PASSED [ 57%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_various_text_and_length_combinations[Test-4-Test] PASSED [ 57%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_various_text_and_length_combinations[Testing-4-T...] PASSED [ 57%]
+tests/unit/test_exporters.py::TestTruncateText::test_should_handle_various_text_and_length_combinations[A-5-A] PASSED [ 57%]
+tests/unit/test_exporters.py::TestExporterIntegration::test_should_export_same_data_to_all_formats_successfully PASSED [ 57%]
+tests/unit/test_exporters.py::TestExporterIntegration::test_should_handle_special_characters_across_all_formats PASSED [ 57%]
+tests/unit/test_exporters.py::TestExporterIntegration::test_should_handle_large_dataset_efficiently PASSED [ 57%]
+tests/unit/test_exporters.py::TestExporterIntegration::test_should_maintain_consistency_across_formats PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_generate_basic_tree_when_simple_directory PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_respect_max_depth_when_deeply_nested PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_truncate_when_max_files_exceeded PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_git_directory_when_present PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_pycache_directory_when_present PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_venv_directory_when_present PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_node_modules_when_present PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_pytest_cache_when_present PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_egg_info_directories_when_present PASSED [ 58%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_exclude_binary_files_when_present PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_handle_empty_directory_gracefully PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_return_empty_string_when_directory_not_found PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_handle_permission_errors_gracefully PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_format_tree_with_indentation PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_handle_relative_paths_correctly PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_sort_entries_alphabetically PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_show_directories_with_trailing_slash PASSED [ 59%]
+tests/unit/test_file_tree.py::TestGenerateFileTree::test_should_complete_quickly_for_typical_repo PASSED [ 59%]
+tests/unit/test_gemini_long_prompts.py::TestGeminiLongPrompts::test_long_prompt_with_markdown_formatting PASSED [ 60%]
+tests/unit/test_gemini_long_prompts.py::TestGeminiLongPrompts::test_prompt_length_validation PASSED [ 60%]
+tests/unit/test_gemini_long_prompts.py::TestGeminiLongPrompts::test_markdown_formatting_in_prompt PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_initialize_with_correct_defaults_when_created PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_require_args_when_initializing PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_extract_response_when_parsing_verbose_output PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_handle_multiline_response_when_parsing_output PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_extract_response_when_output_has_no_timings PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_handle_empty_lines_when_parsing_output PASSED [ 60%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_strip_whitespace_when_parsing_output PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_handle_response_only_output_when_parsing PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_invoke_successfully_when_process_succeeds PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_raise_timeout_error_when_process_times_out PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_raise_runtime_error_when_process_fails PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_include_context_when_provided PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_handle_response_with_code_blocks_when_parsing PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_handle_special_characters_when_parsing_output PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_filter_eof_marker_when_parsing_output PASSED [ 61%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_filter_ggml_messages_when_parsing_output PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAdapter::test_should_filter_standalone_prompt_markers_when_parsing PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_resolve_absolute_path_when_model_exists PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_resolve_relative_path_when_model_exists PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_find_model_by_exact_name_when_in_search_path PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_find_model_by_fuzzy_name_when_partial_match PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_search_recursively_when_model_in_subdirectory PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_prefer_exact_match_when_multiple_models_found PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_return_shortest_path_when_no_exact_match PASSED [ 62%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_raise_file_not_found_when_model_does_not_exist PASSED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_list_available_models_in_error_message PASSED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_expand_tilde_in_search_paths FAILED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_use_env_var_for_additional_search_paths FAILED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_support_colon_separated_paths_in_env_var FAILED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_deduplicate_search_paths PASSED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_handle_case_insensitive_matching PASSED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_limit_available_models_list_in_error PASSED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_show_no_models_message_when_search_paths_empty PASSED [ 63%]
+tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_auto_resolve_model_path_when_invoking PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_adapter_initialization PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_build_request_structure PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_build_request_with_long_prompt PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_parse_response_extracts_content PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_parse_response_handles_missing_choices PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_parse_response_handles_empty_choices PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_parse_response_handles_missing_message PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_invoke_success PASSED [ 64%]
+tests/unit/test_lmstudio_adapter.py::TestLMStudioAdapter::test_invoke_with_context PASSED [ 64%]
+tests/unit/test_maintenance.py::TestDatabaseStats::test_get_database_stats_empty PASSED [ 65%]
+tests/unit/test_maintenance.py::TestDatabaseStats::test_get_database_stats_with_data PASSED [ 65%]
+tests/unit/test_maintenance.py::TestDatabaseStats::test_get_database_stats_performance PASSED [ 65%]
+tests/unit/test_maintenance.py::TestDatabaseStats::test_get_database_stats_error_handling PASSED [ 65%]
+tests/unit/test_maintenance.py::TestGrowthAnalysis::test_analyze_growth_empty PASSED [ 65%]
+tests/unit/test_maintenance.py::TestGrowthAnalysis::test_analyze_growth_with_data PASSED [ 65%]
+tests/unit/test_maintenance.py::TestGrowthAnalysis::test_analyze_growth_custom_period PASSED [ 65%]
+tests/unit/test_maintenance.py::TestGrowthAnalysis::test_analyze_growth_performance PASSED [ 65%]
+tests/unit/test_maintenance.py::TestArchivalEstimation::test_estimate_archival_benefit_empty PASSED [ 65%]
+tests/unit/test_maintenance.py::TestArchivalEstimation::test_estimate_archival_benefit_no_old_decisions PASSED [ 66%]
+tests/unit/test_maintenance.py::TestArchivalEstimation::test_estimate_archival_benefit_with_old_decisions PASSED [ 66%]
+tests/unit/test_maintenance.py::TestArchivalEstimation::test_estimate_archival_benefit_would_trigger PASSED [ 66%]
+tests/unit/test_maintenance.py::TestArchivalEstimation::test_estimate_archival_benefit_performance PASSED [ 66%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_empty_db PASSED [ 66%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_healthy_db PASSED [ 66%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_orphaned_stances PASSED [ 66%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_orphaned_similarities PASSED [ 66%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_future_timestamps PASSED [ 66%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_missing_fields PASSED [ 67%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_invalid_similarity_scores PASSED [ 67%]
+tests/unit/test_maintenance.py::TestHealthCheck::test_health_check_performance PASSED [ 67%]
+tests/unit/test_maintenance.py::TestArchivalMethods::test_identify_archive_candidates_not_implemented PASSED [ 67%]
+tests/unit/test_maintenance.py::TestArchivalMethods::test_archive_old_decisions_not_implemented PASSED [ 67%]
+tests/unit/test_maintenance.py::TestArchivalMethods::test_archive_old_decisions_respects_dry_run PASSED [ 67%]
+tests/unit/test_maintenance.py::TestMigrationGeneration::test_get_pending_migrations_returns_list PASSED [ 67%]
+tests/unit/test_maintenance.py::TestMigrationGeneration::test_get_pending_migrations_includes_archived_column PASSED [ 67%]
+tests/unit/test_maintenance.py::TestMigrationGeneration::test_get_pending_migrations_includes_last_accessed_column PASSED [ 67%]
+tests/unit/test_maintenance.py::TestMigrationGeneration::test_get_pending_migrations_includes_indexes PASSED [ 68%]
+tests/unit/test_maintenance.py::TestMigrationGeneration::test_get_pending_migrations_count PASSED [ 68%]
+tests/unit/test_maintenance.py::TestErrorHandling::test_stats_with_closed_connection PASSED [ 68%]
+tests/unit/test_maintenance.py::TestErrorHandling::test_growth_analysis_with_closed_connection PASSED [ 68%]
+tests/unit/test_maintenance.py::TestErrorHandling::test_health_check_with_closed_connection PASSED [ 68%]
+tests/unit/test_maintenance.py::TestMaintenanceInitialization::test_initialization_with_storage PASSED [ 68%]
+tests/unit/test_maintenance.py::TestMaintenanceInitialization::test_initialization_logs_phase PASSED [ 68%]
+tests/unit/test_metrics.py::TestModelMetrics::test_initial_values PASSED [ 68%]
+tests/unit/test_metrics.py::TestModelMetrics::test_vote_success_rate_zero_responses PASSED [ 68%]
+tests/unit/test_metrics.py::TestModelMetrics::test_vote_success_rate_calculation PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_avg_response_length_zero_responses PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_avg_response_length_calculation PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_truncation_rate_zero_responses PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_truncation_rate_calculation PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_avg_response_time_zero_responses PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_avg_response_time_calculation PASSED [ 69%]
+tests/unit/test_metrics.py::TestModelMetrics::test_to_dict PASSED        [ 69%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_or_create_model_new PASSED [ 69%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_or_create_model_existing PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_record_response_success PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_record_response_failed PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_record_response_abstain PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_record_response_truncated PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_record_multiple_responses_same_model PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_summary_empty PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_summary_with_data PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_problem_models_none PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_problem_models_low_vote_rate PASSED [ 70%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_problem_models_high_truncation PASSED [ 71%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_problem_models_short_responses PASSED [ 71%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_problem_models_min_responses PASSED [ 71%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_get_problem_models_multiple_issues PASSED [ 71%]
+tests/unit/test_metrics.py::TestResponseQualityTracker::test_reset PASSED [ 71%]
+tests/unit/test_metrics.py::TestGlobalTracker::test_get_quality_tracker_singleton PASSED [ 71%]
+tests/unit/test_metrics.py::TestGlobalTracker::test_get_quality_tracker_creates_if_none PASSED [ 71%]
+tests/unit/test_migrate_config.py::TestMigrateConfig::test_migrate_cli_tools_to_adapters PASSED [ 71%]
+tests/unit/test_migrate_config.py::TestMigrateConfig::test_migrate_creates_backup PASSED [ 71%]
+tests/unit/test_migrate_config.py::TestMigrateConfig::test_migrate_already_migrated_is_idempotent PASSED [ 72%]
+tests/unit/test_migrate_config.py::TestMigrateConfig::test_migrate_preserves_all_tools PASSED [ 72%]
+tests/unit/test_migrate_config.py::TestMigrateConfig::test_migrate_file_not_found PASSED [ 72%]
+tests/unit/test_model_registry.py::test_registry_lists_models FAILED     [ 72%]
+tests/unit/test_model_registry.py::test_registry_enforces_allowlist PASSED [ 72%]
+tests/unit/test_model_registry.py::test_registry_is_permissive_for_unmanaged_adapters PASSED [ 72%]
+tests/unit/test_model_registry.py::test_list_for_adapter_returns_only_enabled_models PASSED [ 72%]
+tests/unit/test_model_registry.py::test_list_for_adapter_with_disabled_models_excludes_them PASSED [ 72%]
+tests/unit/test_model_registry.py::test_backward_compatibility_models_without_enabled_field_default_to_true PASSED [ 72%]
+tests/unit/test_model_registry.py::test_get_all_models_returns_all_regardless_of_enabled_status PASSED [ 73%]
+tests/unit/test_model_registry.py::test_get_all_models_preserves_ordering PASSED [ 73%]
+tests/unit/test_model_registry.py::test_empty_registry_returns_empty_list PASSED [ 73%]
+tests/unit/test_model_registry.py::test_all_disabled_models_returns_empty_enabled_list PASSED [ 73%]
+tests/unit/test_model_registry.py::test_all_disabled_models_but_get_all_returns_all PASSED [ 73%]
+tests/unit/test_model_registry.py::test_nonexistent_adapter_returns_empty_lists PASSED [ 73%]
+tests/unit/test_model_registry.py::test_allowed_ids_only_includes_enabled_models PASSED [ 73%]
+tests/unit/test_model_registry.py::test_is_allowed_returns_false_for_disabled_models PASSED [ 73%]
+tests/unit/test_model_registry.py::test_get_default_ignores_disabled_models PASSED [ 73%]
+tests/unit/test_model_registry.py::test_get_default_with_all_disabled_returns_none PASSED [ 74%]
+tests/unit/test_model_registry.py::test_mixed_enabled_disabled_maintains_ordering PASSED [ 74%]
+tests/unit/test_model_registry.py::test_enabled_field_is_stored_in_registry_entry PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_valid_participant PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_participant_creation PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_participant_allows_missing_model PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_invalid_cli_raises_error PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_ollama_participant PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_lmstudio_participant PASSED [ 74%]
+tests/unit/test_models.py::TestParticipant::test_llamacpp_participant PASSED [ 75%]
+tests/unit/test_models.py::TestParticipant::test_openrouter_participant PASSED [ 75%]
+tests/unit/test_models.py::TestParticipantReasoningEffort::test_reasoning_effort_default_none PASSED [ 75%]
+tests/unit/test_models.py::TestParticipantReasoningEffort::test_reasoning_effort_accepts_valid_string PASSED [ 75%]
+tests/unit/test_models.py::TestParticipantReasoningEffort::test_reasoning_effort_serializes_correctly PASSED [ 75%]
+tests/unit/test_models.py::TestParticipantReasoningEffort::test_reasoning_effort_none_serializes_correctly PASSED [ 75%]
+tests/unit/test_models.py::TestParticipantReasoningEffort::test_reasoning_effort_from_dict PASSED [ 75%]
+tests/unit/test_models.py::TestDeliberateRequest::test_valid_request_minimal PASSED [ 75%]
+tests/unit/test_models.py::TestDeliberateRequest::test_request_allows_missing_model PASSED [ 75%]
+tests/unit/test_models.py::TestDeliberateRequest::test_valid_request_full PASSED [ 76%]
+tests/unit/test_models.py::TestDeliberateRequest::test_requires_at_least_two_participants PASSED [ 76%]
+tests/unit/test_models.py::TestDeliberateRequest::test_rounds_must_be_positive PASSED [ 76%]
+tests/unit/test_models.py::TestDeliberateRequest::test_rounds_capped_at_five PASSED [ 76%]
+tests/unit/test_models.py::TestRoundResponse::test_valid_round_response PASSED [ 76%]
+tests/unit/test_models.py::TestDeliberationResult::test_valid_result PASSED [ 76%]
+tests/unit/test_models.py::TestVote::test_valid_vote PASSED              [ 76%]
+tests/unit/test_models.py::TestVote::test_vote_confidence_must_be_between_0_and_1 PASSED [ 76%]
+tests/unit/test_models.py::TestVote::test_vote_edge_cases_0_and_1 PASSED [ 76%]
+tests/unit/test_models.py::TestVote::test_vote_requires_all_fields PASSED [ 76%]
+tests/unit/test_models.py::TestRoundVote::test_valid_round_vote PASSED   [ 77%]
+tests/unit/test_models.py::TestRoundVote::test_round_vote_requires_all_fields PASSED [ 77%]
+tests/unit/test_models.py::TestVotingResult::test_valid_voting_result_with_consensus PASSED [ 77%]
+tests/unit/test_models.py::TestVotingResult::test_valid_voting_result_no_consensus PASSED [ 77%]
+tests/unit/test_models.py::TestVotingResult::test_voting_result_requires_all_fields PASSED [ 77%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_adapter_initialization PASSED [ 77%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_adapter_strips_trailing_slash PASSED [ 77%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_build_request_structure PASSED [ 77%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_build_request_with_context PASSED [ 77%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_parse_response_extracts_content PASSED [ 78%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_parse_response_missing_field_raises_error PASSED [ 78%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_invoke_success PASSED [ 78%]
+tests/unit/test_ollama_adapter.py::TestOllamaAdapter::test_invoke_with_context PASSED [ 78%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_adapter_initialization PASSED [ 78%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_adapter_initialization_without_api_key PASSED [ 78%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_build_request_structure PASSED [ 78%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_build_request_without_api_key_still_includes_header PASSED [ 78%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_build_request_with_long_prompt PASSED [ 78%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_parse_response_extracts_content PASSED [ 79%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_parse_response_handles_missing_choices PASSED [ 79%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_parse_response_handles_empty_choices PASSED [ 79%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_parse_response_handles_missing_message PASSED [ 79%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_invoke_success PASSED [ 79%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_invoke_with_context PASSED [ 79%]
+tests/unit/test_openrouter_adapter.py::TestOpenRouterAdapter::test_environment_variable_in_api_key PASSED [ 79%]
+tests/unit/test_query_engine.py::TestQueryEngineSimilarSearch::test_search_similar_basic PASSED [ 79%]
+tests/unit/test_query_engine.py::TestQueryEngineSimilarSearch::test_search_similar_with_threshold PASSED [ 79%]
+tests/unit/test_query_engine.py::TestQueryEngineSimilarSearch::test_search_similar_respects_limit PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineSimilarSearch::test_search_similar_returns_ordered_by_score PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineContradictions::test_find_contradictions_basic PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineContradictions::test_find_contradictions_with_scope PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineContradictions::test_find_contradictions_with_threshold PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineEvolution::test_trace_evolution_basic PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineEvolution::test_trace_evolution_includes_metadata PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineEvolution::test_trace_evolution_with_related PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineEvolution::test_trace_evolution_invalid_id PASSED [ 80%]
+tests/unit/test_query_engine.py::TestQueryEngineDiagnostics::test_diagnostics_for_empty_results PASSED [ 81%]
+tests/unit/test_query_engine.py::TestQueryEngineDiagnostics::test_diagnostics_shows_near_misses PASSED [ 81%]
+tests/unit/test_query_engine.py::TestQueryEngineDiagnostics::test_diagnostics_suggests_lower_threshold PASSED [ 81%]
+tests/unit/test_query_engine.py::TestQueryEngineDiagnostics::test_diagnostics_with_results PASSED [ 81%]
+tests/unit/test_query_engine.py::TestQueryEngineDiagnostics::test_diagnostics_handles_empty_database PASSED [ 81%]
+tests/unit/test_query_engine.py::TestQueryEngineIntegration::test_full_workflow PASSED [ 81%]
+tests/unit/test_query_engine.py::TestQueryEngineIntegration::test_performance_acceptable PASSED [ 81%]
+tests/unit/test_requirements.py::test_httpx_importable PASSED            [ 81%]
+tests/unit/test_requirements.py::test_tenacity_importable PASSED         [ 81%]
+tests/unit/test_requirements.py::test_vcrpy_importable FAILED            [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_truncation_keeps_last_n_rounds PASSED [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_truncation_with_multiple_responses_per_round PASSED [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_no_truncation_when_under_limit PASSED [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_truncation_flag_set_correctly PASSED [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_truncation_with_single_round PASSED [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_truncation_preserves_round_order PASSED [ 82%]
+tests/unit/test_server_truncation.py::TestRoundTruncation::test_empty_debate_no_truncation PASSED [ 82%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_tool_results_injected_into_context FAILED [ 82%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_tool_results_visible_to_all_participants_in_next_round FAILED [ 82%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_truncation_actually_applied FAILED [ 83%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_round_filtering_actually_applied FAILED [ 83%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_tool_errors_shown_in_context PASSED [ 83%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_truncate_output_method_exists_and_works PASSED [ 83%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_build_context_without_tools PASSED [ 83%]
+tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_build_context_with_no_current_round_num PASSED [ 83%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_valid_tool_request_parsing PASSED [ 83%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_search_code_tool_request PASSED [ 83%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_list_files_tool_request PASSED [ 83%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_run_command_tool_request PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_invalid_tool_name_validation PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_missing_required_arguments PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolRequest::test_arguments_must_be_dict PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolResult::test_success_result_creation PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolResult::test_error_result_creation PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolResult::test_result_with_both_output_and_error PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolResult::test_result_serialization PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolExecutionRecord::test_record_creation_with_metadata PASSED [ 84%]
+tests/unit/test_tool_schema.py::TestToolExecutionRecord::test_timestamp_auto_generation PASSED [ 85%]
+tests/unit/test_tool_schema.py::TestToolExecutionRecord::test_record_with_failed_tool_execution PASSED [ 85%]
+tests/unit/test_tools.py::TestBaseTool::test_abstract_class_cannot_instantiate PASSED [ 85%]
+tests/unit/test_tools.py::TestBaseTool::test_subclass_must_implement_name_property PASSED [ 85%]
+tests/unit/test_tools.py::TestBaseTool::test_subclass_must_implement_execute PASSED [ 85%]
+tests/unit/test_tools.py::TestBaseTool::test_valid_subclass_can_instantiate PASSED [ 85%]
+tests/unit/test_tools.py::TestToolExecutor::test_register_tool PASSED    [ 85%]
+tests/unit/test_tools.py::TestToolExecutor::test_register_multiple_tools PASSED [ 85%]
+tests/unit/test_tools.py::TestToolExecutor::test_execute_registered_tool PASSED [ 85%]
+tests/unit/test_tools.py::TestToolExecutor::test_execute_unregistered_tool_returns_error PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_execute_tool_with_failure PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_execute_tool_with_exception PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_tool_request_from_response PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_multiple_tool_requests PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_response_with_no_tool_requests PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_invalid_json_returns_empty_list PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_invalid_tool_name_ignored PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_missing_arguments_ignored PASSED [ 86%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_tool_request_with_complex_arguments PASSED [ 87%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_tool_request_with_closing_brace_in_argument PASSED [ 87%]
+tests/unit/test_tools.py::TestToolExecutor::test_parse_multiple_tool_requests_with_braces_in_arguments PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_existing_file PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_file_respects_working_directory PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_nonexistent_file_returns_error PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_file_too_large_returns_error PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_binary_file_returns_error PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_file_missing_path_argument PASSED [ 87%]
+tests/unit/test_tools.py::TestReadFileTool::test_tool_name PASSED        [ 88%]
+tests/unit/test_tools.py::TestReadFileTool::test_read_file_not_found_helpful_error PASSED [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_search_finds_matches PASSED [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_search_with_no_matches_returns_empty PASSED [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_search_with_invalid_regex_returns_error PASSED [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_search_missing_pattern_argument PASSED [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_search_defaults_to_current_directory PASSED [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_tool_name PASSED      [ 88%]
+tests/unit/test_tools.py::TestSearchCodeTool::test_search_blocks_outside_working_directory PASSED [ 88%]
+tests/unit/test_tools.py::TestListFilesTool::test_list_files_with_glob_pattern PASSED [ 88%]
+tests/unit/test_tools.py::TestListFilesTool::test_list_files_with_no_matches PASSED [ 89%]
+tests/unit/test_tools.py::TestListFilesTool::test_list_files_defaults_pattern PASSED [ 89%]
+tests/unit/test_tools.py::TestListFilesTool::test_list_files_invalid_path PASSED [ 89%]
+tests/unit/test_tools.py::TestListFilesTool::test_tool_name PASSED       [ 89%]
+tests/unit/test_tools.py::TestListFilesTool::test_list_files_blocks_traversal_pattern PASSED [ 89%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_whitelisted_command PASSED [ 89%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_command_with_args PASSED [ 89%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_non_whitelisted_command_returns_error PASSED [ 89%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_command_missing_command_argument PASSED [ 89%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_command_defaults_args PASSED [ 90%]
+tests/unit/test_tools.py::TestRunCommandTool::test_tool_name PASSED      [ 90%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_command_blocks_git_mutation PASSED [ 90%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_command_blocks_find_exec PASSED [ 90%]
+tests/unit/test_tools.py::TestRunCommandTool::test_run_command_blocks_absolute_paths_outside_workdir PASSED [ 90%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_basic PASSED [ 90%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_clamps_to_config_limits PASSED [ 90%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_path_traversal_security PASSED [ 90%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_nonexistent_path PASSED [ 90%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_subdirectory PASSED [ 91%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_without_working_directory PASSED [ 91%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_tool_name PASSED     [ 91%]
+tests/unit/test_tools.py::TestGetFileTreeTool::test_get_file_tree_defaults PASSED [ 91%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_normalize_match_text_replaces_backslashes PASSED [ 91%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_normalize_match_text_strips_whitespace PASSED [ 91%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_normalize_path_handles_resolution_errors PASSED [ 91%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_path_contains_segment_detects_directory PASSED [ 91%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_path_contains_segment_handles_nested_segments PASSED [ 91%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_path_contains_segment_handles_empty_segment PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_within_directory_detects_escapes PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_within_directory_handles_relative_paths PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_working_directory_validates_existence PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_working_directory_requires_directory PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_path_within_working_dir_blocks_traversal PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_path_within_working_dir_allows_relative PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_path_within_working_dir_allows_absolute_if_within PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_path_within_working_dir_blocks_absolute_outside PASSED [ 92%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_resolve_path_without_working_dir PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_pattern_has_traversal_detects_dotdot PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_with_directory_patterns PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_with_glob_patterns PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_with_basename_match PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_with_segment_match PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_empty_patterns PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_ignores_empty_pattern PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_multiple_patterns PASSED [ 93%]
+tests/unit/test_tools.py::TestPathSecurityHelpers::test_is_path_excluded_wildcard_patterns PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_git_requires_safe_subcommand PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_git_allows_version_flag PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_git_blocks_unsafe_flags PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_git_requires_subcommand PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_git_safe_subcommands PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_find_blocks_exec_flags PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_find_allows_safe_usage PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_blocks_path_traversal PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_blocks_absolute_paths_outside_workdir PASSED [ 94%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_allows_absolute_paths_inside_workdir PASSED [ 95%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_ignores_flags PASSED [ 95%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_without_working_directory PASSED [ 95%]
+tests/unit/test_tools.py::TestRunCommandValidation::test_validate_handles_non_string_args PASSED [ 95%]
+tests/unit/test_tools.py::TestToolExecutorWorkingDirectory::test_executor_propagates_working_directory_to_tool PASSED [ 95%]
+tests/unit/test_tools.py::TestToolExecutorWorkingDirectory::test_executor_working_directory_in_request_arguments PASSED [ 95%]
+tests/unit/test_tools.py::TestToolExecutorWorkingDirectory::test_executor_parameter_overrides_request_argument PASSED [ 95%]
+tests/unit/test_tools.py::TestSymlinkSecurity::test_read_file_follows_symlinks_but_checks_destination PASSED [ 95%]
+tests/unit/test_tools.py::TestSymlinkSecurity::test_list_files_with_symlinks_inside_workspace PASSED [ 95%]
+tests/unit/test_transcript.py::TestTranscriptManager::test_generate_markdown PASSED [ 96%]
+tests/unit/test_transcript.py::TestTranscriptManager::test_save_transcript PASSED [ 96%]
+tests/unit/test_transcript.py::TestTranscriptManager::test_generates_unique_filenames PASSED [ 96%]
+tests/unit/test_transcript.py::TestTranscriptManager::test_save_recreates_missing_directory PASSED [ 96%]
+tests/unit/test_workers.py::TestSimilarityJob::test_similarity_job_creation PASSED [ 96%]
+tests/unit/test_workers.py::TestSimilarityJob::test_similarity_job_defaults PASSED [ 96%]
+tests/unit/test_workers.py::TestSimilarityJob::test_similarity_job_unique_ids PASSED [ 96%]
+tests/unit/test_workers.py::TestBackgroundWorkerInit::test_worker_initialization PASSED [ 96%]
+tests/unit/test_workers.py::TestBackgroundWorkerInit::test_worker_custom_params PASSED [ 96%]
+tests/unit/test_workers.py::TestBackgroundWorkerInit::test_worker_creates_queues PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerLifecycle::test_worker_start PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerLifecycle::test_worker_start_idempotent PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerLifecycle::test_worker_stop PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerLifecycle::test_worker_stop_idempotent PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerLifecycle::test_worker_stop_without_start PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerLifecycle::test_worker_stop_with_timeout PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_low_priority PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_high_priority PASSED [ 97%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_default_priority PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_invalid_priority PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_when_not_running PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_with_delay PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerEnqueue::test_enqueue_queue_full PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerProcessing::test_processes_job PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerProcessing::test_processes_multiple_jobs PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerProcessing::test_prioritizes_high_priority_jobs PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerProcessing::test_handles_job_failure PASSED [ 98%]
+tests/unit/test_workers.py::TestBackgroundWorkerProcessing::test_computes_similarities PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerStats::test_get_stats_initial PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerStats::test_get_stats_after_processing PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerStats::test_get_stats_with_pending_jobs PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerMemory::test_queue_bounded PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerMemory::test_active_jobs_tracking PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerBatching::test_batch_size_limit PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerFallback::test_synchronous_computation_fallback PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerPerformance::test_queue_throughput PASSED [ 99%]
+tests/unit/test_workers.py::TestBackgroundWorkerPerformance::test_deliberation_start_not_blocked PASSED [100%]
+
+================================== FAILURES ===================================
+______________ TestHTTPAdapterInvoke.test_invoke_no_retry_on_400 ______________
+adapters\base_http.py:253: in _make_request
+    f"   [HTTP_ERROR] {response.status_code}: {json.dumps(error_body, indent=2)}"
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\json\__init__.py:238: in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+C:\Program Files\Python311\Lib\json\encoder.py:202: in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\json\encoder.py:439: in _iterencode
+    o = _default(o)
+        ^^^^^^^^^^^
+C:\Program Files\Python311\Lib\json\encoder.py:180: in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+E   TypeError: Object of type Mock is not JSON serializable
+
+During handling of the above exception, another exception occurred:
+tests\unit\test_base_http_adapter.py:256: in test_invoke_no_retry_on_400
+    await adapter.invoke(prompt="test", model="test-model")
+adapters\base_http.py:191: in invoke
+    response_json = await self._execute_request_with_retry(
+adapters\base_http.py:263: in _execute_request_with_retry
+    return await _make_request()
+           ^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\site-packages\tenacity\asyncio\__init__.py:189: in async_wrapped
+    return await copy(fn, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\site-packages\tenacity\asyncio\__init__.py:111: in __call__
+    do = await self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\site-packages\tenacity\asyncio\__init__.py:153: in iter
+    result = await action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\site-packages\tenacity\_utils.py:99: in inner
+    return call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\site-packages\tenacity\__init__.py:400: in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\concurrent\futures\_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+C:\Program Files\Python311\Lib\concurrent\futures\_base.py:401: in __get_result
+    raise self._exception
+C:\Program Files\Python311\Lib\site-packages\tenacity\asyncio\__init__.py:114: in __call__
+    result = await fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+adapters\base_http.py:257: in _make_request
+    f"   [HTTP_ERROR] {response.status_code} body: {response.text[:500]}"
+                                                    ^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'Mock' object is not subscriptable
+------------------------------ Captured log call ------------------------------
+INFO     ai_counsel.progress:base_http.py:180 [START] HTTP REQUEST | Model: test-model | URL: http://test/api/test
+DEBUG    ai_counsel.progress:base_http.py:181    API Key present: False
+DEBUG    ai_counsel.progress:base_http.py:182    Prompt length: 4 chars
+DEBUG    ai_counsel.progress:base_http.py:183    Body size: 18 bytes
+DEBUG    ai_counsel.progress:base_http.py:184    Headers: []
+DEBUG    ai_counsel.progress:base_http.py:185    Timeout: 60s
+DEBUG    ai_counsel.progress:base_http.py:244    [POST] Making request to http://test/api/test
+DEBUG    ai_counsel.progress:base_http.py:246    [RESPONSE] Status: 400
+ERROR    ai_counsel.progress:base_http.py:206 [ERROR] HTTP REQUEST FAILED | Model: test-model | Time: 0.01s | Error: TypeError: 'Mock' object is not subscriptable
+___________ TestDecisionGraphConfig.test_db_path_absolute_unchanged ___________
+tests\unit\test_config.py:496: in test_db_path_absolute_unchanged
+    assert config.db_path == absolute_path, (
+E   AssertionError: Absolute path should be preserved unchanged
+E   assert 'C:\\tmp\\test_graph.db' == '/tmp/test_graph.db'
+E     
+E     - /tmp/test_graph.db
+E     ? ^   ^
+E     + C:\tmp\test_graph.db
+E     ? ^^^   ^
+______________ TestDecisionGraphConfig.test_db_path_with_env_var ______________
+tests\unit\test_config.py:521: in test_db_path_with_env_var
+    assert config.db_path == expected_path, (
+E   AssertionError: Expected /var/data/graph.db, got C:\var\data\graph.db
+E   assert 'C:\\var\\data\\graph.db' == '/var/data/graph.db'
+E     
+E     - /var/data/graph.db
+E     ? ^   ^    ^
+E     + C:\var\data\graph.db
+E     ? ^^^   ^    ^
+__ TestDecisionGraphBudgetAwareConfig.test_config_yaml_loads_new_parameters ___
+tests\unit\test_config.py:982: in test_config_yaml_loads_new_parameters
+    assert config.decision_graph.context_token_budget == 1500, \
+E   AssertionError: context_token_budget should be 1500 in config.yaml
+E   assert 1000 == 1500
+E    +  where 1000 = DecisionGraphConfig(enabled=True, db_path='C:\\Users\\joelf\\ai-counsel\\decision_graph.db', similarity_threshold=0.6, max_context_decisions=3, compute_similarities=True, context_token_budget=1000, tier_boundaries={'strong': 0.75, 'moderate': 0.6}, query_window=1000, query_cache_size=200, embedding_cache_size=500, query_ttl=300, adaptive_k_small_threshold=100, adaptive_k_medium_threshold=1000, adaptive_k_small=5, adaptive_k_medium=3, adaptive_k_large=2, noise_floor=0.4).context_token_budget
+E    +    where DecisionGraphConfig(enabled=True, db_path='C:\\Users\\joelf\\ai-counsel\\decision_graph.db', similarity_threshold=0.6, max_context_decisions=3, compute_similarities=True, context_token_budget=1000, tier_boundaries={'strong': 0.75, 'moderate': 0.6}, query_window=1000, query_cache_size=200, embedding_cache_size=500, query_ttl=300, adaptive_k_small_threshold=100, adaptive_k_medium_threshold=1000, adaptive_k_small=5, adaptive_k_medium=3, adaptive_k_large=2, noise_floor=0.4) = Config(version='1.0', adapters={'ollama': HTTPAdapterConfig(type='http', base_url='http://localhost:11434', api_key=None, headers=None, timeout=300, max_retries=3), 'lmstudio': HTTPAdapterConfig(type='http', base_url='http://localhost:1234', api_key=None, headers=None, timeout=300, max_retries=3), 'openrouter': HTTPAdapterConfig(type='http', base_url='https://openrouter.ai/api/v1', api_key=None, headers=None, timeout=300, max_retries=3)}, cli_tools={'claude': CLIToolConfig(command='claude', args=['-p', '--model', '{model}', '--settings', '{{"disableAllHooks": true}}', '{prompt}'], timeout=300, default_reasoning_effort=None), 'codex': CLIToolConfig(command='codex', args=['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '--model', '{model}', '-c', 'model_reasoning_effort="{reasoning_effort}"', '{prompt}'], timeout=300, default_reasoning_effort='medium'), 'droid': CLIToolConfig(command='droid', args=['exec', '-m', '{model}', '-r', '{reasoning_effort}', '{prompt}'], timeout=300, default_reasoning_effort='medium'), 'gemini': CLIToolConfig(command='gemini', args=['-m', '{model}', '-p', '{prompt}'], timeout=300, default_reasoning_effort=None), 'llamacpp': CLIToolConfig(c...nce_threshold=0.4, min_rounds_before_check=1, consecutive_stable_rounds=2, stance_stability_threshold=0.8, response_length_drop_threshold=0.4), early_stopping=EarlyStoppingConfig(enabled=True, threshold=0.66, respect_min_rounds=True), convergence_threshold=0.8, enable_convergence_detection=True, tool_context_max_rounds=2, tool_output_max_chars=1000, file_tree=FileTreeConfig(max_depth=2, max_files=50, enabled=True), tool_security=ToolSecurityConfig(exclude_patterns=['transcripts/', 'transcripts/**', '.git/', '.git/**', 'node_modules/', 'node_modules/**', '.venv/', 'venv/', '__pycache__/'], max_file_size_bytes=1048576), vote_retry=VoteRetryConfig(enabled=True, max_retries=1, min_response_length=100)), decision_graph=DecisionGraphConfig(enabled=True, db_path='C:\\Users\\joelf\\ai-counsel\\decision_graph.db', similarity_threshold=0.6, max_context_decisions=3, compute_similarities=True, context_token_budget=1000, tier_boundaries={'strong': 0.75, 'moderate': 0.6}, query_window=1000, query_cache_size=200, embedding_cache_size=500, query_ttl=300, adaptive_k_small_threshold=100, adaptive_k_medium_threshold=1000, adaptive_k_small=5, adaptive_k_medium=3, adaptive_k_large=2, noise_floor=0.4)).decision_graph
+_____________ TestFileTreeConfig.test_config_yaml_loads_file_tree _____________
+tests\unit\test_config.py:1148: in test_config_yaml_loads_file_tree
+    assert config.deliberation.file_tree.max_depth == 3
+E   assert 2 == 3
+E    +  where 2 = FileTreeConfig(max_depth=2, max_files=50, enabled=True).max_depth
+E    +    where FileTreeConfig(max_depth=2, max_files=50, enabled=True) = DeliberationConfig(convergence_detection=ConvergenceDetectionConfig(enabled=True, semantic_similarity_threshold=0.85, divergence_threshold=0.4, min_rounds_before_check=1, consecutive_stable_rounds=2, stance_stability_threshold=0.8, response_length_drop_threshold=0.4), early_stopping=EarlyStoppingConfig(enabled=True, threshold=0.66, respect_min_rounds=True), convergence_threshold=0.8, enable_convergence_detection=True, tool_context_max_rounds=2, tool_output_max_chars=1000, file_tree=FileTreeConfig(max_depth=2, max_files=50, enabled=True), tool_security=ToolSecurityConfig(exclude_patterns=['transcripts/', 'transcripts/**', '.git/', '.git/**', 'node_modules/', 'node_modules/**', '.venv/', 'venv/', '__pycache__/'], max_file_size_bytes=1048576), vote_retry=VoteRetryConfig(enabled=True, max_retries=1, min_response_length=100)).file_tree
+E    +      where DeliberationConfig(convergence_detection=ConvergenceDetectionConfig(enabled=True, semantic_similarity_threshold=0.85, divergence_threshold=0.4, min_rounds_before_check=1, consecutive_stable_rounds=2, stance_stability_threshold=0.8, response_length_drop_threshold=0.4), early_stopping=EarlyStoppingConfig(enabled=True, threshold=0.66, respect_min_rounds=True), convergence_threshold=0.8, enable_convergence_detection=True, tool_context_max_rounds=2, tool_output_max_chars=1000, file_tree=FileTreeConfig(max_depth=2, max_files=50, enabled=True), tool_security=ToolSecurityConfig(exclude_patterns=['transcripts/', 'transcripts/**', '.git/', '.git/**', 'node_modules/', 'node_modules/**', '.venv/', 'venv/', '__pycache__/'], max_file_size_bytes=1048576), vote_retry=VoteRetryConfig(enabled=True, max_retries=1, min_response_length=100)) = Config(version='1.0', adapters={'ollama': HTTPAdapterConfig(type='http', base_url='http://localhost:11434', api_key=None, headers=None, timeout=300, max_retries=3), 'lmstudio': HTTPAdapterConfig(type='http', base_url='http://localhost:1234', api_key=None, headers=None, timeout=300, max_retries=3), 'openrouter': HTTPAdapterConfig(type='http', base_url='https://openrouter.ai/api/v1', api_key=None, headers=None, timeout=300, max_retries=3)}, cli_tools={'claude': CLIToolConfig(command='claude', args=['-p', '--model', '{model}', '--settings', '{{"disableAllHooks": true}}', '{prompt}'], timeout=300, default_reasoning_effort=None), 'codex': CLIToolConfig(command='codex', args=['exec', '--skip-git-repo-check', '--sandbox', 'workspace-write', '--model', '{model}', '-c', 'model_reasoning_effort="{reasoning_effort}"', '{prompt}'], timeout=300, default_reasoning_effort='medium'), 'droid': CLIToolConfig(command='droid', args=['exec', '-m', '{model}', '-r', '{reasoning_effort}', '{prompt}'], timeout=300, default_reasoning_effort='medium'), 'gemini': CLIToolConfig(command='gemini', args=['-m', '{model}', '-p', '{prompt}'], timeout=300, default_reasoning_effort=None), 'llamacpp': CLIToolConfig(c...nce_threshold=0.4, min_rounds_before_check=1, consecutive_stable_rounds=2, stance_stability_threshold=0.8, response_length_drop_threshold=0.4), early_stopping=EarlyStoppingConfig(enabled=True, threshold=0.66, respect_min_rounds=True), convergence_threshold=0.8, enable_convergence_detection=True, tool_context_max_rounds=2, tool_output_max_chars=1000, file_tree=FileTreeConfig(max_depth=2, max_files=50, enabled=True), tool_security=ToolSecurityConfig(exclude_patterns=['transcripts/', 'transcripts/**', '.git/', '.git/**', 'node_modules/', 'node_modules/**', '.venv/', 'venv/', '__pycache__/'], max_file_size_bytes=1048576), vote_retry=VoteRetryConfig(enabled=True, max_retries=1, min_response_length=100)), decision_graph=DecisionGraphConfig(enabled=True, db_path='C:\\Users\\joelf\\ai-counsel\\decision_graph.db', similarity_threshold=0.6, max_context_decisions=3, compute_similarities=True, context_token_budget=1000, tier_boundaries={'strong': 0.75, 'moderate': 0.6}, query_window=1000, query_cache_size=200, embedding_cache_size=500, query_ttl=300, adaptive_k_small_threshold=100, adaptive_k_medium_threshold=1000, adaptive_k_small=5, adaptive_k_medium=3, adaptive_k_large=2, noise_floor=0.4)).deliberation
+_ TestImpasseDetection.test_consecutive_divergent_count_increments_on_divergence _
+tests\unit\test_decision_graph_storage.py:978: in test_consecutive_divergent_count_increments_on_divergence
+    assert result.status == "diverging"
+E   AssertionError: assert 'refining' == 'diverging'
+E     
+E     - diverging
+E     + refining
+___________ TestImpasseDetection.test_impasse_threshold_calculation ___________
+tests\unit\test_decision_graph_storage.py:1154: in test_impasse_threshold_calculation
+    assert result.status == "impasse"
+E   AssertionError: assert 'diverging' == 'impasse'
+E     
+E     - impasse
+E     + diverging
+______ TestImpasseDetection.test_impasse_not_triggered_before_threshold _______
+tests\unit\test_decision_graph_storage.py:1207: in test_impasse_not_triggered_before_threshold
+    assert result.status == "diverging"
+E   AssertionError: assert 'refining' == 'diverging'
+E     
+E     - diverging
+E     + refining
+_______ TestImpasseDetection.test_impasse_with_different_config_values ________
+tests\unit\test_decision_graph_storage.py:1327: in test_impasse_with_different_config_values
+    assert result.status == "impasse"
+E   AssertionError: assert 'refining' == 'impasse'
+E     
+E     - impasse
+E     + refining
+________ TestImpasseDetection.test_impasse_interruption_resets_counter ________
+tests\unit\test_decision_graph_storage.py:1380: in test_impasse_interruption_resets_counter
+    assert detector.consecutive_divergent_count == 1
+E   assert 0 == 1
+E    +  where 0 = <deliberation.convergence.ConvergenceDetector object at 0x000001E29B0A2A50>.consecutive_divergent_count
+_____ TestLlamaCppAutoDiscovery.test_should_expand_tilde_in_search_paths ______
+tests\unit\test_llamacpp_adapter.py:575: in test_should_expand_tilde_in_search_paths
+    assert any(str(p) == str(models_dir) for p in expanded_paths)
+E   assert False
+E    +  where False = any(<generator object TestLlamaCppAutoDiscovery.test_should_expand_tilde_in_search_paths.<locals>.<genexpr> at 0x000001E29AA61E40>)
+_ TestLlamaCppAutoDiscovery.test_should_use_env_var_for_additional_search_paths _
+tests\unit\test_llamacpp_adapter.py:592: in test_should_use_env_var_for_additional_search_paths
+    assert resolved == str(model_file)
+E   AssertionError: assert '\\Users\\joe...ls\\test.gguf' == 'C:\\Users\\j...ls\\test.gguf'
+E     
+E     - C:\Users\joelf\AppData\Local\Temp\pytest-of-joelf\pytest-30\test_should_use_env_var_for_ad0\models\test.gguf
+E     ? --
+E     + \Users\joelf\AppData\Local\Temp\pytest-of-joelf\pytest-30\test_should_use_env_var_for_ad0\models\test.gguf
+_ TestLlamaCppAutoDiscovery.test_should_support_colon_separated_paths_in_env_var _
+tests\unit\test_llamacpp_adapter.py:617: in test_should_support_colon_separated_paths_in_env_var
+    assert resolved1 == str(model1)
+E   AssertionError: assert '\\Users\\joe...\model-a.gguf' == 'C:\\Users\\j...\model-a.gguf'
+E     
+E     - C:\Users\joelf\AppData\Local\Temp\pytest-of-joelf\pytest-30\test_should_support_colon_sepa0\dir1\model-a.gguf
+E     ? --
+E     + \Users\joelf\AppData\Local\Temp\pytest-of-joelf\pytest-30\test_should_support_colon_sepa0\dir1\model-a.gguf
+_________________________ test_registry_lists_models __________________________
+tests\unit\test_model_registry.py:17: in test_registry_lists_models
+    assert claude_entries[0].id == "claude-sonnet-4-5-20250929"
+E   AssertionError: assert 'claude-opus-4-5-20251101' == 'claude-sonnet-4-5-20250929'
+E     
+E     - claude-sonnet-4-5-20250929
+E     + claude-opus-4-5-20251101
+____________________________ test_vcrpy_importable ____________________________
+tests\unit\test_requirements.py:20: in test_vcrpy_importable
+    import vcr
+E   ModuleNotFoundError: No module named 'vcr'
+___ TestToolResultContextInjection.test_tool_results_injected_into_context ____
+tests\unit\test_tool_context_injection.py:52: in test_tool_results_injected_into_context
+    assert len(engine.tool_execution_history) > 0, "Should have executed tool"
+E   AssertionError: Should have executed tool
+E   assert 0 > 0
+E    +  where 0 = len([])
+E    +    where [] = <deliberation.engine.DeliberationEngine object at 0x000001E29B12A6D0>.tool_execution_history
+------------------------------ Captured log call ------------------------------
+WARNING  deliberation.engine:engine.py:349 Round 1: Vote retry 1 still missing VOTE marker
+_ TestToolResultContextInjection.test_tool_results_visible_to_all_participants_in_next_round _
+tests\unit\test_tool_context_injection.py:133: in test_tool_results_visible_to_all_participants_in_next_round
+    assert "important evidence" in claude_context, \
+E   AssertionError: Claude should receive context with tool output
+E   assert 'important evidence' in 'Previous discussion:\n\nRound 1 - sonnet@claude: \nLet me check the data.\nTOOL_REQUEST: {"name": "read_file", "arguments": {"path": "C:\\Users\\joelf\\AppData\\Local\\Temp\\pytest-of-joelf\\pytest-30\\test_tool_results_visible_to_a0\\data.txt"}}\n\n\n---\n\n[Vote Retry Response]\n\nLet me check the data.\nTOOL_REQUEST: {"name": "read_file", "arguments": {"path": "C:\\Users\\joelf\\AppData\\Local\\Temp\\pytest-of-joelf\\pytest-30\\test_tool_results_visible_to_a0\\data.txt"}}\n\n\nRound 1 - gpt-4@codex: I\'ll wait for data.\n'
+------------------------------ Captured log call ------------------------------
+WARNING  deliberation.engine:engine.py:349 Round 1: Vote retry 1 still missing VOTE marker
+_______ TestToolResultContextInjection.test_truncation_actually_applied _______
+tests\unit\test_tool_context_injection.py:169: in test_truncation_actually_applied
+    assert len(engine.tool_execution_history) > 0, "Should have executed tool"
+E   AssertionError: Should have executed tool
+E   assert 0 > 0
+E    +  where 0 = len([])
+E    +    where [] = <deliberation.engine.DeliberationEngine object at 0x000001E29B058B90>.tool_execution_history
+------------------------------ Captured log call ------------------------------
+WARNING  deliberation.engine:engine.py:349 Round 1: Vote retry 1 still missing VOTE marker
+____ TestToolResultContextInjection.test_round_filtering_actually_applied _____
+tests\unit\test_tool_context_injection.py:210: in test_round_filtering_actually_applied
+    assert len(engine.tool_execution_history) == 5, "Should have 5 tool executions"
+E   AssertionError: Should have 5 tool executions
+E   assert 0 == 5
+E    +  where 0 = len([])
+E    +    where [] = <deliberation.engine.DeliberationEngine object at 0x000001E29B07A290>.tool_execution_history
+------------------------------ Captured log call ------------------------------
+WARNING  deliberation.engine:engine.py:349 Round 1: Vote retry 1 still missing VOTE marker
+WARNING  deliberation.engine:engine.py:349 Round 2: Vote retry 1 still missing VOTE marker
+WARNING  deliberation.engine:engine.py:349 Round 3: Vote retry 1 still missing VOTE marker
+WARNING  deliberation.engine:engine.py:349 Round 4: Vote retry 1 still missing VOTE marker
+WARNING  deliberation.engine:engine.py:349 Round 5: Vote retry 1 still missing VOTE marker
+=========================== short test summary info ===========================
+FAILED tests/unit/test_base_http_adapter.py::TestHTTPAdapterInvoke::test_invoke_no_retry_on_400
+FAILED tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_absolute_unchanged
+FAILED tests/unit/test_config.py::TestDecisionGraphConfig::test_db_path_with_env_var
+FAILED tests/unit/test_config.py::TestDecisionGraphBudgetAwareConfig::test_config_yaml_loads_new_parameters
+FAILED tests/unit/test_config.py::TestFileTreeConfig::test_config_yaml_loads_file_tree
+FAILED tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_consecutive_divergent_count_increments_on_divergence
+FAILED tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_threshold_calculation
+FAILED tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_not_triggered_before_threshold
+FAILED tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_with_different_config_values
+FAILED tests/unit/test_decision_graph_storage.py::TestImpasseDetection::test_impasse_interruption_resets_counter
+FAILED tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_expand_tilde_in_search_paths
+FAILED tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_use_env_var_for_additional_search_paths
+FAILED tests/unit/test_llamacpp_adapter.py::TestLlamaCppAutoDiscovery::test_should_support_colon_separated_paths_in_env_var
+FAILED tests/unit/test_model_registry.py::test_registry_lists_models - Assert...
+FAILED tests/unit/test_requirements.py::test_vcrpy_importable - ModuleNotFoun...
+FAILED tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_tool_results_injected_into_context
+FAILED tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_tool_results_visible_to_all_participants_in_next_round
+FAILED tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_truncation_actually_applied
+FAILED tests/unit/test_tool_context_injection.py::TestToolResultContextInjection::test_round_filtering_actually_applied
+============ 19 failed, 897 passed, 1 skipped in 490.40s (0:08:10) ============

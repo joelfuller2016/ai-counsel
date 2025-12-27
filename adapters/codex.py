@@ -19,9 +19,10 @@ class CodexAdapter(BaseCLIAdapter):
     def __init__(
         self,
         command: str = "codex",
-        args: list[str] | None = None,
+        args: Optional[list[str]] = None,
         timeout: int = 60,
         default_reasoning_effort: Optional[str] = None,
+        max_prompt_length: Optional[int] = None,
     ):
         """
         Initialize Codex adapter.
@@ -32,6 +33,8 @@ class CodexAdapter(BaseCLIAdapter):
             timeout: Timeout in seconds (default: 60)
             default_reasoning_effort: Default reasoning effort level (none/minimal/low/medium/high).
                 Used when {reasoning_effort} placeholder is in args. Can be overridden per-participant.
+            max_prompt_length: Maximum prompt length in characters. If not specified,
+                uses default of 100,000 characters from base class.
         """
         if args is None:
             raise ValueError("args must be provided from config.yaml")
@@ -45,6 +48,7 @@ class CodexAdapter(BaseCLIAdapter):
             args=args,
             timeout=timeout,
             default_reasoning_effort=default_reasoning_effort,
+            max_prompt_length=max_prompt_length,
         )
 
     async def invoke(

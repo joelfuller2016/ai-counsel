@@ -1,6 +1,7 @@
 """Model registry utilities derived from configuration."""
 from __future__ import annotations
 
+import difflib
 import logging
 from dataclasses import dataclass
 from typing import Dict, Iterable, Optional
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class RegistryEntry:
     """Normalized model definition entry.
-    
+
     Attributes:
         id: Unique model identifier used by adapter
         label: Human-friendly display name for UI dropdowns
@@ -22,6 +23,7 @@ class RegistryEntry:
         note: Optional descriptive text shown in model picker tooltips
         default: Whether marked as recommended default for this adapter
         enabled: Whether model is active and available for use
+        timeout: Model-specific timeout in seconds (None = use adapter timeout)
     """
 
     id: str
@@ -30,6 +32,34 @@ class RegistryEntry:
     note: Optional[str] = None
     default: bool = False
     enabled: bool = True
+    timeout: Optional[int] = None
+
+
+@dataclass
+class ModelValidationResult:
+    """Result of validating a model ID against the registry.
+
+    Attributes:
+        valid: Whether the model ID is valid and enabled
+        model_id: The model ID that was validated
+        adapter: The adapter name
+        exists: Whether the model exists in registry (regardless of enabled state)
+        enabled: Whether the model is enabled (None if doesn't exist)
+        similar_models: List of similar model IDs (for suggestions)
+        error_message: Human-readable error message if invalid
+    """
+
+    valid: bool
+    model_id: str
+    adapter: str
+    exists: bool = False
+    enabled: Optional[bool] = None
+    similar_models: builtins.list[str] = None  # type: ignore[assignment]
+    error_message: Optional[str] = None
+
+    def __post_init__(self):
+        if self.similar_models is None:
+            self.similar_models = []
 
 
 class ModelRegistry:
@@ -56,6 +86,7 @@ class ModelRegistry:
                         note=model_def.note,
                         default=bool(model_def.default),
                         enabled=bool(model_def.enabled),
+                        timeout=model_def.timeout,
                     )
                 )
 
@@ -142,6 +173,169 @@ class ModelRegistry:
         if cli not in self._entries:
             return True  # Unrestricted adapter (e.g., open router, custom paths)
         return model_id in self.allowed_ids(cli)
+
+    def get_model_timeout(self, cli: str, model_id: str) -> Optional[int]:
+        """Get model-specific timeout for a given adapter and model.
+
+        Args:
+            cli: Adapter name (e.g., 'claude', 'codex')
+            model_id: Model identifier
+
+        Returns:
+            Model-specific timeout in seconds, or None if not configured
+            (meaning the adapter timeout should be used).
+        """
+        entries = self._entries.get(cli, [])
+        for entry in entries:
+            if entry.id == model_id:
+                return entry.timeout
+        return None
+
+    def validate_model(
+        self, cli: str, model_id: str, max_suggestions: int = 3
+    ) -> ModelValidationResult:
+        """Validate a model ID and provide detailed feedback.
+
+        Args:
+            cli: Adapter name
+            model_id: Model ID to validate
+            max_suggestions: Maximum number of similar model suggestions
+
+        Returns:
+            ModelValidationResult with validation details and suggestions
+        """
+        # If adapter is not in registry, it's unrestricted
+        if cli not in self._entries:
+            return ModelValidationResult(
+                valid=True,
+                model_id=model_id,
+                adapter=cli,
+                exists=True,
+                enabled=True,
+            )
+
+        all_models = self._entries.get(cli, [])
+        all_ids = [e.id for e in all_models]
+        enabled_ids = [e.id for e in all_models if e.enabled]
+
+        # Check if model exists
+        matching_entry = next((e for e in all_models if e.id == model_id), None)
+
+        if matching_entry:
+            # Model exists - check if enabled
+            if matching_entry.enabled:
+                return ModelValidationResult(
+                    valid=True,
+                    model_id=model_id,
+                    adapter=cli,
+                    exists=True,
+                    enabled=True,
+                )
+            else:
+                # Model exists but is disabled
+                similar = self._find_similar_models(
+                    model_id, enabled_ids, max_suggestions
+                )
+                return ModelValidationResult(
+                    valid=False,
+                    model_id=model_id,
+                    adapter=cli,
+                    exists=True,
+                    enabled=False,
+                    similar_models=similar,
+                    error_message=self._build_disabled_error(
+                        model_id, cli, enabled_ids, similar
+                    ),
+                )
+        else:
+            # Model doesn't exist - find similar ones
+            similar = self._find_similar_models(model_id, enabled_ids, max_suggestions)
+            return ModelValidationResult(
+                valid=False,
+                model_id=model_id,
+                adapter=cli,
+                exists=False,
+                enabled=None,
+                similar_models=similar,
+                error_message=self._build_not_found_error(
+                    model_id, cli, enabled_ids, similar
+                ),
+            )
+
+    def _find_similar_models(
+        self, model_id: str, candidate_ids: builtins.list[str], max_results: int = 3
+    ) -> builtins.list[str]:
+        """Find model IDs similar to the given one using fuzzy matching.
+
+        Args:
+            model_id: The model ID to match against
+            candidate_ids: List of valid model IDs to search
+            max_results: Maximum number of suggestions to return
+
+        Returns:
+            List of similar model IDs, ordered by similarity (best first)
+        """
+        if not candidate_ids:
+            return []
+
+        # Use difflib to find close matches
+        # cutoff=0.4 allows for moderate typos/variations
+        matches = difflib.get_close_matches(
+            model_id.lower(),
+            [m.lower() for m in candidate_ids],
+            n=max_results,
+            cutoff=0.4,
+        )
+
+        # Map back to original case
+        lower_to_original = {m.lower(): m for m in candidate_ids}
+        return [lower_to_original[m] for m in matches]
+
+    def _build_disabled_error(
+        self,
+        model_id: str,
+        cli: str,
+        enabled_ids: builtins.list[str],
+        similar: builtins.list[str],
+    ) -> str:
+        """Build error message for a disabled model."""
+        msg = f"Model '{model_id}' exists but is disabled for adapter '{cli}'."
+
+        if similar:
+            msg += f" Similar enabled models: {', '.join(similar)}."
+        elif enabled_ids:
+            # Show first few enabled models if no similar ones found
+            preview = enabled_ids[:3]
+            msg += f" Available models: {', '.join(preview)}"
+            if len(enabled_ids) > 3:
+                msg += f" (+{len(enabled_ids) - 3} more)"
+            msg += "."
+
+        msg += " Use 'list_models' tool to see all available models."
+        return msg
+
+    def _build_not_found_error(
+        self,
+        model_id: str,
+        cli: str,
+        enabled_ids: builtins.list[str],
+        similar: builtins.list[str],
+    ) -> str:
+        """Build error message for a model that doesn't exist."""
+        msg = f"Model '{model_id}' not found for adapter '{cli}'."
+
+        if similar:
+            msg += f" Did you mean: {', '.join(similar)}?"
+        elif enabled_ids:
+            # Show first few available models
+            preview = enabled_ids[:3]
+            msg += f" Available models: {', '.join(preview)}"
+            if len(enabled_ids) > 3:
+                msg += f" (+{len(enabled_ids) - 3} more)"
+            msg += "."
+
+        msg += " Use 'list_models' tool to see all available models."
+        return msg
 
     # ------------------------------------------------------------------
     # Internal helpers

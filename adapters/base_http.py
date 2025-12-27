@@ -78,6 +78,17 @@ class BaseHTTPAdapter(ABC):
         result = await adapter.invoke(prompt="Hello", model="my-model")
     """
 
+    # Default prompt length limits per HTTP adapter type (in characters)
+    # These are conservative limits to prevent API rejection errors
+    DEFAULT_PROMPT_LIMITS: dict[str, int] = {
+        "ollama": 50_000,      # Local models typically have smaller context
+        "lmstudio": 50_000,    # Local models typically have smaller context
+        "openrouter": 100_000, # OpenRouter supports various models
+    }
+
+    # Adapter name for logging and limit lookup (subclasses should override)
+    ADAPTER_NAME: str = "http"
+
     def __init__(
         self,
         base_url: str,
@@ -85,6 +96,7 @@ class BaseHTTPAdapter(ABC):
         max_retries: int = 3,
         api_key: Optional[str] = None,
         headers: Optional[dict[str, str]] = None,
+        max_prompt_length: Optional[int] = None,
     ):
         """
         Initialize HTTP adapter.
@@ -95,12 +107,39 @@ class BaseHTTPAdapter(ABC):
             max_retries: Maximum retry attempts for transient failures (default: 3)
             api_key: Optional API key for authentication
             headers: Optional default headers to include in all requests
+            max_prompt_length: Maximum prompt length in characters. If not specified,
+                uses adapter-specific default from DEFAULT_PROMPT_LIMITS.
         """
         self.base_url = base_url.rstrip("/")  # Remove trailing slash
         self.timeout = timeout
         self.max_retries = max_retries
         self.api_key = api_key
         self.default_headers = headers or {}
+        self._max_prompt_length = max_prompt_length
+
+    @property
+    def max_prompt_length(self) -> int:
+        """
+        Get the maximum prompt length for this adapter.
+
+        Returns configured value if set, otherwise looks up default by adapter name.
+        Falls back to 100,000 characters if no specific default exists.
+        """
+        if self._max_prompt_length is not None:
+            return self._max_prompt_length
+        return self.DEFAULT_PROMPT_LIMITS.get(self.ADAPTER_NAME, 100_000)
+
+    def validate_prompt_length(self, prompt: str) -> bool:
+        """
+        Validate that prompt length is within allowed limits.
+
+        Args:
+            prompt: The prompt text to validate
+
+        Returns:
+            True if prompt is valid length, False if too long
+        """
+        return len(prompt) <= self.max_prompt_length
 
     @abstractmethod
     def build_request(
@@ -142,6 +181,7 @@ class BaseHTTPAdapter(ABC):
         is_deliberation: bool = True,
         working_directory: Optional[str] = None,
         reasoning_effort: Optional[str] = None,
+        timeout_override: Optional[int] = None,
     ) -> str:
         """
         Invoke the HTTP API with the given prompt and model.
@@ -154,6 +194,9 @@ class BaseHTTPAdapter(ABC):
                            kept for API compatibility with BaseCLIAdapter)
             working_directory: Unused for HTTP adapters (kept for API compatibility)
             reasoning_effort: Unused for HTTP adapters (kept for API compatibility)
+            timeout_override: Optional model-specific timeout in seconds. If provided,
+                overrides the adapter's default timeout. Useful for reasoning models
+                that require longer response times.
 
         Returns:
             Parsed response from the model
@@ -163,10 +206,21 @@ class BaseHTTPAdapter(ABC):
             httpx.HTTPStatusError: If API returns error status
             RuntimeError: If retries exhausted
         """
+        # Use model-specific timeout if provided, otherwise use adapter default
+        effective_timeout = timeout_override if timeout_override is not None else self.timeout
         # Build full prompt
         full_prompt = prompt
         if context:
             full_prompt = f"{context}\n\n{prompt}"
+
+        # Validate prompt length
+        if not self.validate_prompt_length(full_prompt):
+            raise ValueError(
+                f"Prompt too long ({len(full_prompt):,} characters). "
+                f"Maximum allowed for {self.ADAPTER_NAME}: {self.max_prompt_length:,} characters. "
+                f"Consider reducing context or breaking into smaller chunks. "
+                f"This validation prevents API rejection errors."
+            )
 
         # Get request components from subclass
         endpoint, headers, body = self.build_request(model, full_prompt)
@@ -184,14 +238,15 @@ class BaseHTTPAdapter(ABC):
         progress_logger.debug(f"   Prompt length: {len(full_prompt)} chars")
         progress_logger.debug(f"   Body size: {len(body_str)} bytes")
         progress_logger.debug(f"   Headers: {list(headers.keys())}")
-        progress_logger.debug(f"   Timeout: {self.timeout}s")
+        timeout_info = f" (model override)" if timeout_override else ""
+        progress_logger.debug(f"   Timeout: {effective_timeout}s{timeout_info}")
 
         start_time = datetime.now()
 
         # Execute request with retry logic
         try:
             response_json = await self._execute_request_with_retry(
-                url=full_url, headers=headers, body=body
+                url=full_url, headers=headers, body=body, timeout=effective_timeout
             )
             elapsed = (datetime.now() - start_time).total_seconds()
             progress_logger.info(f"[SUCCESS] HTTP REQUEST | Model: {model} | Time: {elapsed:.2f}s")
@@ -201,7 +256,7 @@ class BaseHTTPAdapter(ABC):
         except asyncio.TimeoutError:
             elapsed = (datetime.now() - start_time).total_seconds()
             progress_logger.error(f"[TIMEOUT] HTTP REQUEST | Model: {model} | Time: {elapsed:.2f}s")
-            raise TimeoutError(f"HTTP request timed out after {self.timeout}s")
+            raise TimeoutError(f"HTTP request timed out after {effective_timeout}s")
 
         except Exception as e:
             elapsed = (datetime.now() - start_time).total_seconds()
@@ -209,7 +264,7 @@ class BaseHTTPAdapter(ABC):
             raise
 
     async def _execute_request_with_retry(
-        self, url: str, headers: dict[str, str], body: dict
+        self, url: str, headers: dict[str, str], body: dict, timeout: Optional[int] = None
     ) -> dict:
         """
         Execute HTTP POST request with retry logic.
@@ -226,6 +281,7 @@ class BaseHTTPAdapter(ABC):
             url: Full request URL
             headers: Request headers
             body: Request body (will be JSON-encoded)
+            timeout: Request timeout in seconds (uses adapter default if not specified)
 
         Returns:
             Parsed JSON response
@@ -234,6 +290,7 @@ class BaseHTTPAdapter(ABC):
             httpx.HTTPStatusError: On HTTP error (after retries exhausted for 5xx)
             httpx.NetworkError: On network error (after retries exhausted)
         """
+        effective_timeout = timeout if timeout is not None else self.timeout
 
         @retry(
             stop=stop_after_attempt(self.max_retries),
@@ -242,7 +299,7 @@ class BaseHTTPAdapter(ABC):
             reraise=True,
         )
         async def _make_request():
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=effective_timeout) as client:
                 progress_logger.debug(f"   [POST] Making request to {url}")
                 response = await client.post(url, headers=headers, json=body)
                 progress_logger.debug(f"   [RESPONSE] Status: {response.status_code}")

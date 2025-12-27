@@ -140,8 +140,13 @@ for source_name, adapter_configs in adapter_sources:
             logger.error(f"Failed to create adapter for {cli_name}: {e}")
 
 
-# Create engine with config for convergence detection
-engine = DeliberationEngine(adapters=adapters, config=config, server_dir=WORK_DIR)
+# Create engine with config for convergence detection and model registry for per-model timeouts
+engine = DeliberationEngine(
+    adapters=adapters,
+    config=config,
+    server_dir=WORK_DIR,
+    model_registry=model_registry,
+)
 
 
 CLI_TITLES = {
@@ -552,30 +557,30 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 logger.info(
                     f"Using default model '{default_model}' for adapter '{cli}'."
                 )
-            elif not model_registry.is_allowed(cli, provided_model):
-                # Check if model exists but is disabled (for operational visibility)
-                all_models = model_registry.get_all_models(cli)
-                all_ids = {e.id for e in all_models}
-                
-                if provided_model in all_ids:
-                    logger.warning(
-                        f"User requested disabled model '{provided_model}' for adapter '{cli}'"
-                    )
-                
-                allowed = sorted(model_registry.allowed_ids(cli))
-                if allowed:
-                    raise ValueError(
-                        f"Model '{provided_model}' is not allowlisted for adapter '{cli}'. "
-                        f"Allowed models: {', '.join(allowed)}."
-                    )
+            else:
+                # Validate provided model with detailed feedback
+                validation = model_registry.validate_model(cli, provided_model)
+                if not validation.valid:
+                    # Log additional context for operational visibility
+                    if validation.exists and validation.enabled is False:
+                        logger.warning(
+                            f"User requested disabled model '{provided_model}' for adapter '{cli}'"
+                        )
+                    else:
+                        logger.warning(
+                            f"User requested unknown model '{provided_model}' for adapter '{cli}'. "
+                            f"Similar models: {validation.similar_models}"
+                        )
+                    # Use the detailed error message from validation
+                    raise ValueError(validation.error_message)
+
             # Ensure session default remains valid (e.g., config change)
             if participant.model and not model_registry.is_allowed(cli, participant.model):
-                allowed = sorted(model_registry.allowed_ids(cli))
-                if allowed:
-                    raise ValueError(
-                        f"Model '{participant.model}' is no longer allowlisted for adapter '{cli}'. "
-                        f"Allowed models: {', '.join(allowed)}."
-                    )
+                validation = model_registry.validate_model(cli, participant.model)
+                raise ValueError(
+                    validation.error_message
+                    or f"Model '{participant.model}' is no longer allowlisted for adapter '{cli}'."
+                )
 
         # Execute deliberation
         result = await engine.execute(request)
@@ -693,21 +698,21 @@ async def handle_set_session_models(arguments: dict) -> list[TextContent]:
             updates[cli] = None
             continue
 
-        if not model_registry.is_allowed(cli, value):
-            # Check if model exists but is disabled (for operational visibility)
-            all_models = model_registry.get_all_models(cli)
-            all_ids = {e.id for e in all_models}
-            
-            if value in all_ids:
+        # Validate model with detailed feedback
+        validation = model_registry.validate_model(cli, value)
+        if not validation.valid:
+            # Log additional context for operational visibility
+            if validation.exists and validation.enabled is False:
                 logger.warning(
                     f"User attempted to set disabled model '{value}' as session default for adapter '{cli}'"
                 )
-            
-            allowed = sorted(model_registry.allowed_ids(cli))
-            raise ValueError(
-                f"Model '{value}' is not allowlisted for adapter '{cli}'. "
-                f"Allowed models: {', '.join(allowed)}."
-            )
+            else:
+                logger.warning(
+                    f"User attempted to set unknown model '{value}' as session default for adapter '{cli}'. "
+                    f"Similar models: {validation.similar_models}"
+                )
+            # Use the detailed error message from validation
+            raise ValueError(validation.error_message)
 
         session_defaults[cli] = value
         updates[cli] = value

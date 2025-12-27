@@ -1,10 +1,11 @@
 """AI-powered summary generation for deliberations."""
 import logging
-from typing import Dict, List, Union
+import re
+from typing import Dict, List, Optional, Union
 
 from adapters.base import BaseCLIAdapter
 from adapters.base_http import BaseHTTPAdapter
-from models.schema import RoundResponse, Summary
+from models.schema import RoundResponse, Summary, VotingResult
 
 logger = logging.getLogger(__name__)
 
@@ -260,3 +261,225 @@ Please be concise and focus on the substance of the arguments, not formatting or
                     points.append(content)
 
         return points
+
+
+class BasicSummarizer:
+    """
+    Template-based fallback summarizer that works without AI.
+
+    Generates a structured summary from deliberation data using simple
+    text extraction and formatting. Used when all AI summarizers fail
+    or are unavailable.
+    """
+
+    def generate_summary(
+        self,
+        question: str,
+        responses: List[RoundResponse],
+        voting_result: Optional[VotingResult] = None,
+    ) -> Summary:
+        """
+        Generate a basic template-based summary.
+
+        Args:
+            question: Original deliberation question
+            responses: All responses from all rounds
+            voting_result: Optional voting result for consensus info
+
+        Returns:
+            Summary object with extracted information
+        """
+        # Extract main points from each participant
+        participant_points = self._extract_participant_points(responses)
+
+        # Build consensus statement
+        consensus = self._build_consensus_statement(voting_result, responses)
+
+        # Extract key agreements (points mentioned by multiple participants)
+        key_agreements = self._find_agreements(participant_points)
+
+        # Extract key disagreements
+        key_disagreements = self._find_disagreements(participant_points, voting_result)
+
+        # Build recommendation
+        recommendation = self._build_recommendation(voting_result, question)
+
+        return Summary(
+            consensus=f"[Auto-generated fallback summary] {consensus}",
+            key_agreements=key_agreements
+            if key_agreements
+            else ["Unable to extract specific agreements from responses"],
+            key_disagreements=key_disagreements
+            if key_disagreements
+            else ["Unable to extract specific disagreements from responses"],
+            final_recommendation=recommendation,
+        )
+
+    def _extract_participant_points(
+        self, responses: List[RoundResponse]
+    ) -> Dict[str, List[str]]:
+        """
+        Extract main points from each participant's responses.
+
+        Args:
+            responses: All responses from all rounds
+
+        Returns:
+            Dictionary mapping participant IDs to their main points
+        """
+        points_by_participant: Dict[str, List[str]] = {}
+
+        for response in responses:
+            participant = response.participant
+            if participant not in points_by_participant:
+                points_by_participant[participant] = []
+
+            # Extract key sentences (first sentence of each paragraph)
+            paragraphs = response.response.split("\n\n")
+            for para in paragraphs:
+                para = para.strip()
+                if not para or para.startswith("[ERROR"):
+                    continue
+
+                # Skip tool requests and vote markers
+                if "TOOL_REQUEST" in para or para.startswith("VOTE:"):
+                    continue
+
+                # Get first sentence (up to 200 chars)
+                sentences = re.split(r"[.!?]", para)
+                if sentences and sentences[0].strip():
+                    point = sentences[0].strip()[:200]
+                    if point and len(point) > 20:  # Skip very short fragments
+                        points_by_participant[participant].append(point)
+
+        # Limit to top 3 points per participant
+        for participant in points_by_participant:
+            points_by_participant[participant] = points_by_participant[participant][:3]
+
+        return points_by_participant
+
+    def _build_consensus_statement(
+        self,
+        voting_result: Optional[VotingResult],
+        responses: List[RoundResponse],
+    ) -> str:
+        """
+        Build a consensus statement based on voting results.
+
+        Args:
+            voting_result: Voting result if available
+            responses: All responses
+
+        Returns:
+            Consensus statement string
+        """
+        if not voting_result:
+            return "No voting data available to determine consensus."
+
+        if voting_result.consensus_reached and voting_result.winning_option:
+            total_votes = sum(voting_result.final_tally.values())
+            winner_votes = voting_result.final_tally.get(
+                voting_result.winning_option, 0
+            )
+            return (
+                f"Consensus reached on '{voting_result.winning_option}' "
+                f"with {winner_votes}/{total_votes} votes."
+            )
+        elif voting_result.final_tally:
+            tally_str = ", ".join(
+                f"{opt}: {count}" for opt, count in voting_result.final_tally.items()
+            )
+            return f"No clear consensus. Vote distribution: {tally_str}"
+        else:
+            return "Deliberation completed without clear voting outcome."
+
+    def _find_agreements(
+        self, participant_points: Dict[str, List[str]]
+    ) -> List[str]:
+        """
+        Find potential areas of agreement based on participant responses.
+
+        Args:
+            participant_points: Points extracted from each participant
+
+        Returns:
+            List of potential agreement areas
+        """
+        agreements = []
+
+        # Simple approach: list what each participant emphasized
+        for participant, points in participant_points.items():
+            if points:
+                # Use the first substantive point from each participant
+                short_participant = participant.split("@")[0]  # Remove @cli suffix
+                agreements.append(f"{short_participant}: {points[0]}")
+
+        if not agreements:
+            agreements = ["Participants provided analysis but specific agreements could not be extracted"]
+
+        return agreements[:5]  # Limit to 5 items
+
+    def _find_disagreements(
+        self,
+        participant_points: Dict[str, List[str]],
+        voting_result: Optional[VotingResult],
+    ) -> List[str]:
+        """
+        Find potential areas of disagreement.
+
+        Args:
+            participant_points: Points from each participant
+            voting_result: Voting result if available
+
+        Returns:
+            List of potential disagreement areas
+        """
+        disagreements = []
+
+        # If voting shows different options, there's disagreement
+        if voting_result and voting_result.final_tally:
+            unique_options = list(voting_result.final_tally.keys())
+            if len(unique_options) > 1:
+                # Filter out ABSTAIN from disagreement reporting
+                substantive_options = [
+                    opt for opt in unique_options if opt.upper() != "ABSTAIN"
+                ]
+                if len(substantive_options) > 1:
+                    disagreements.append(
+                        f"Participants voted for different options: {', '.join(substantive_options)}"
+                    )
+
+        if not disagreements:
+            if voting_result and voting_result.consensus_reached:
+                disagreements = ["No significant disagreements - consensus was reached"]
+            else:
+                disagreements = [
+                    "Unable to extract specific disagreements from responses"
+                ]
+
+        return disagreements
+
+    def _build_recommendation(
+        self, voting_result: Optional[VotingResult], question: str
+    ) -> str:
+        """
+        Build a recommendation based on voting outcome.
+
+        Args:
+            voting_result: Voting result if available
+            question: Original question
+
+        Returns:
+            Recommendation string
+        """
+        if voting_result and voting_result.winning_option:
+            return (
+                f"Based on the voting outcome, the recommendation is: "
+                f"'{voting_result.winning_option}'. "
+                f"Review the full debate transcript for detailed reasoning."
+            )
+        else:
+            return (
+                "No clear winner emerged from the deliberation. "
+                "Review the full debate transcript to understand different perspectives."
+            )

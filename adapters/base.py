@@ -16,6 +16,16 @@ class BaseCLIAdapter(ABC):
     Subclasses must implement parse_output() for tool-specific parsing.
     """
 
+    # Default prompt length limits per adapter type (in characters)
+    # These are conservative limits to prevent API rejection errors
+    DEFAULT_PROMPT_LIMITS: dict[str, int] = {
+        "claude": 200_000,    # Claude has large context window
+        "codex": 100_000,     # OpenAI Codex standard limit
+        "droid": 100_000,     # Droid standard limit
+        "gemini": 100_000,    # Gemini API limit (~25k tokens at 4 chars/token)
+        "llamacpp": 32_000,   # Local models typically have smaller context
+    }
+
     # Transient error patterns that warrant retry
     TRANSIENT_ERROR_PATTERNS = [
         r"503.*overload",
@@ -35,6 +45,7 @@ class BaseCLIAdapter(ABC):
         timeout: int = 60,
         max_retries: int = 2,
         default_reasoning_effort: Optional[str] = None,
+        max_prompt_length: Optional[int] = None,
     ):
         """
         Initialize CLI adapter.
@@ -47,12 +58,41 @@ class BaseCLIAdapter(ABC):
             default_reasoning_effort: Default reasoning effort level for this adapter.
                 Only applicable to codex (low/medium/high/extra-high) and droid (off/low/medium/high).
                 Ignored by other adapters. Can be overridden per-participant.
+            max_prompt_length: Maximum prompt length in characters. If not specified,
+                uses adapter-specific default from DEFAULT_PROMPT_LIMITS.
         """
         self.command = command
         self.args = args
         self.timeout = timeout
         self.max_retries = max_retries
         self.default_reasoning_effort = default_reasoning_effort
+        self._max_prompt_length = max_prompt_length
+
+    @property
+    def max_prompt_length(self) -> int:
+        """
+        Get the maximum prompt length for this adapter.
+
+        Returns configured value if set, otherwise looks up default by adapter name.
+        Falls back to 100,000 characters if no specific default exists.
+        """
+        if self._max_prompt_length is not None:
+            return self._max_prompt_length
+        # Try to get adapter name from command (e.g., "claude" from "claude" command)
+        adapter_name = self.command.lower()
+        return self.DEFAULT_PROMPT_LIMITS.get(adapter_name, 100_000)
+
+    def validate_prompt_length(self, prompt: str) -> bool:
+        """
+        Validate that prompt length is within allowed limits.
+
+        Args:
+            prompt: The prompt text to validate
+
+        Returns:
+            True if prompt is valid length, False if too long
+        """
+        return len(prompt) <= self.max_prompt_length
 
     async def invoke(
         self,
@@ -62,6 +102,7 @@ class BaseCLIAdapter(ABC):
         is_deliberation: bool = True,
         working_directory: Optional[str] = None,
         reasoning_effort: Optional[str] = None,
+        timeout_override: Optional[int] = None,
     ) -> str:
         """
         Invoke the CLI tool with the given prompt and model.
@@ -75,6 +116,9 @@ class BaseCLIAdapter(ABC):
             reasoning_effort: Optional reasoning effort level for models that support it.
                 Subclasses may use this to pass adapter-specific flags (e.g., Codex --reasoning).
                 Base implementation ignores this parameter.
+            timeout_override: Optional model-specific timeout in seconds. If provided, overrides
+                the adapter's default timeout. Useful for reasoning models that require longer
+                response times.
 
         Returns:
             Parsed response from the model
@@ -83,19 +127,21 @@ class BaseCLIAdapter(ABC):
             TimeoutError: If execution exceeds timeout
             RuntimeError: If CLI process fails
         """
+        # Use model-specific timeout if provided, otherwise use adapter default
+        effective_timeout = timeout_override if timeout_override is not None else self.timeout
         # Build full prompt
         full_prompt = prompt
         if context:
             full_prompt = f"{context}\n\n{prompt}"
 
-        # Validate prompt length if adapter supports it
-        if hasattr(self, "validate_prompt_length"):
-            if not self.validate_prompt_length(full_prompt):
-                raise ValueError(
-                    f"Prompt too long ({len(full_prompt)} chars). "
-                    f"Maximum allowed: {getattr(self, 'MAX_PROMPT_CHARS', 'unknown')} chars. "
-                    "This prevents API rejection errors."
-                )
+        # Validate prompt length
+        if not self.validate_prompt_length(full_prompt):
+            raise ValueError(
+                f"Prompt too long ({len(full_prompt):,} characters). "
+                f"Maximum allowed for {self.command}: {self.max_prompt_length:,} characters. "
+                f"Consider reducing context or breaking into smaller chunks. "
+                f"This validation prevents API rejection errors."
+            )
 
         # Adjust args based on context (for auto-detecting deliberation mode)
         args = self._adjust_args_for_context(is_deliberation)
@@ -120,12 +166,13 @@ class BaseCLIAdapter(ABC):
             for arg in args
         ]
 
-        # Log the command being executed
+        # Log the command being executed (including timeout info if overridden)
+        timeout_info = f", timeout={effective_timeout}s" if timeout_override else ""
         logger.info(
             f"Executing CLI adapter: command={self.command}, "
             f"model={model}, cwd={cwd}, "
             f"reasoning_effort={effective_reasoning_effort or '(none)'}, "
-            f"prompt_length={len(full_prompt)} chars"
+            f"prompt_length={len(full_prompt)} chars{timeout_info}"
         )
         logger.debug(f"Full command: {self.command} {' '.join(formatted_args[:3])}... (args truncated)")
 
@@ -143,7 +190,7 @@ class BaseCLIAdapter(ABC):
                 )
 
                 stdout, stderr = await asyncio.wait_for(
-                    process.communicate(), timeout=self.timeout
+                    process.communicate(), timeout=effective_timeout
                 )
 
                 if process.returncode != 0:
@@ -185,9 +232,9 @@ class BaseCLIAdapter(ABC):
             except asyncio.TimeoutError:
                 logger.error(
                     f"CLI invocation timed out: command={self.command}, "
-                    f"model={model}, timeout={self.timeout}s"
+                    f"model={model}, timeout={effective_timeout}s"
                 )
-                raise TimeoutError(f"CLI invocation timed out after {self.timeout}s")
+                raise TimeoutError(f"CLI invocation timed out after {effective_timeout}s")
 
         # All retries exhausted
         raise RuntimeError(f"CLI failed after {self.max_retries + 1} attempts. Last error: {last_error}")

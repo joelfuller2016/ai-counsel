@@ -1,0 +1,95 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.2, pytest-8.4.1, pluggy-1.6.0 -- C:\Program Files\Python311\python.exe
+cachedir: .pytest_cache
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: C:\Users\joelf\ai-counsel
+configfile: pytest.ini
+plugins: dash-3.1.0, anyio-4.9.0, langsmith-0.3.45, asyncio-1.0.0, benchmark-5.1.0, cov-6.2.1, docker-3.1.2, mock-3.14.1, timeout-2.4.0, xdist-3.7.0
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 237 items
+
+tests/integration/test_cache_performance.py::TestCachePerformance::test_cache_lookup_latency PASSED [  0%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_embedding_cache_lookup_latency PASSED [  0%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_cache_invalidation_latency PASSED [  1%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_cache_hit_rate_after_warmup PASSED [  1%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_memory_overhead PASSED [  2%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_cache_with_concurrent_access_pattern PASSED [  2%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_ttl_impact_on_hit_rate PASSED [  2%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_lru_eviction_doesnt_impact_hot_items PASSED [  3%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_cache_stats_accuracy PASSED [  3%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_hash_collision_resistance PASSED [  4%]
+tests/integration/test_cache_performance.py::TestCachePerformance::test_cache_performance_degradation_at_capacity PASSED [  4%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_store_and_retrieve_decision_by_id PASSED [  5%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_query_similar_decisions_with_semantic_matching PASSED [  5%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_detect_contradictions_between_similar_decisions PASSED [  5%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_trace_decision_timeline_chronologically PASSED [  6%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_analyze_patterns_with_multiple_participants PASSED [  6%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_export_to_graphml_format PASSED [  7%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_export_to_json_format PASSED [  7%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_handle_file_io_reading_database PASSED [  8%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_handle_file_io_writing_exports PASSED [  8%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_handle_empty_database_gracefully PASSED [  8%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_handle_nonexistent_decision_gracefully PASSED [  9%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_handle_invalid_similarity_threshold PASSED [  9%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_handle_invalid_max_results PASSED [ 10%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_complete_query_workflow_in_under_5_seconds PASSED [ 10%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_retrieve_enriched_context_for_deliberation PASSED [ 10%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphCLIIntegration::test_should_format_participant_stances_in_context PASSED [ 11%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphExportFormats::test_graphml_export_has_required_elements PASSED [ 11%]
+tests/integration/test_cli_graph_integration.py::TestDecisionGraphExportFormats::test_json_export_has_required_fields PASSED [ 12%]
+tests/integration/test_edge_cases.py::TestCircularReferencesPrevention::test_self_loop_prevention PASSED [ 12%]
+tests/integration/test_edge_cases.py::TestCircularReferencesPrevention::test_mutual_references_handled PASSED [ 13%]
+tests/integration/test_edge_cases.py::TestCircularReferencesPrevention::test_transitive_references_chain PASSED [ 13%]
+tests/integration/test_edge_cases.py::TestDuplicateDecisionHandling::test_duplicate_questions_allowed PASSED [ 13%]
+tests/integration/test_edge_cases.py::TestDuplicateDecisionHandling::test_duplicate_participant_stances PASSED [ 14%]
+tests/integration/test_edge_cases.py::TestDuplicateDecisionHandling::test_duplicate_similarity_upsert PASSED [ 14%]
+tests/integration/test_edge_cases.py::TestDuplicateDecisionHandling::test_exact_duplicate_nodes_handled PASSED [ 15%]
+tests/integration/test_edge_cases.py::TestEmptyGraphQueries::test_empty_graph_context_retrieval PASSED [ 15%]
+tests/integration/test_edge_cases.py::TestEmptyGraphQueries::test_empty_graph_similar_decisions PASSED [ 16%]
+tests/integration/test_edge_cases.py::TestEmptyGraphQueries::test_empty_graph_all_decisions PASSED [ 16%]
+tests/integration/test_edge_cases.py::TestEmptyGraphQueries::test_nonexistent_decision_node PASSED [ 16%]
+tests/integration/test_edge_cases.py::TestEmptyGraphQueries::test_nonexistent_participant_stances PASSED [ 17%]
+tests/integration/test_edge_cases.py::TestEmptyGraphQueries::test_query_with_empty_string_id PASSED [ 17%]
+tests/integration/test_edge_cases.py::TestDatabaseCorruptionRecovery::test_missing_decision_foreign_key PASSED [ 18%]
+tests/integration/test_edge_cases.py::TestDatabaseCorruptionRecovery::test_invalid_json_metadata PASSED [ 18%]
+tests/integration/test_edge_cases.py::TestDatabaseCorruptionRecovery::test_null_values_in_required_fields PASSED [ 18%]
+tests/integration/test_edge_cases.py::TestDatabaseCorruptionRecovery::test_malformed_timestamp PASSED [ 19%]
+tests/integration/test_edge_cases.py::TestGraphSizeLimits::test_large_graph_retrieval PASSED [ 19%]
+tests/integration/test_edge_cases.py::TestGraphSizeLimits::test_large_similarity_matrix PASSED [ 20%]
+tests/integration/test_edge_cases.py::TestGraphSizeLimits::test_pagination_with_large_dataset PASSED [ 20%]
+tests/integration/test_edge_cases.py::TestGraphSizeLimits::test_query_limit_enforcement PASSED [ 21%]
+tests/integration/test_edge_cases.py::TestConcurrentWrites::test_concurrent_decision_storage PASSED [ 21%]
+tests/integration/test_edge_cases.py::TestConcurrentWrites::test_concurrent_similarity_writes PASSED [ 21%]
+tests/integration/test_edge_cases.py::TestConcurrentWrites::test_concurrent_read_write_safety PASSED [ 22%]
+tests/integration/test_edge_cases.py::TestConstraintEnforcement::test_foreign_key_constraint PASSED [ 22%]
+tests/integration/test_edge_cases.py::TestConstraintEnforcement::test_unique_constraint_on_similarity PASSED [ 23%]
+tests/integration/test_edge_cases.py::TestConstraintEnforcement::test_not_null_constraints PASSED [ 23%]
+tests/integration/test_edge_cases.py::TestEdgeCaseQueries::test_threshold_boundary_conditions PASSED [ 24%]
+tests/integration/test_edge_cases.py::TestEdgeCaseQueries::test_zero_and_negative_limits PASSED [ 24%]
+tests/integration/test_edge_cases.py::TestEdgeCaseQueries::test_very_large_offset PASSED [ 24%]
+tests/integration/test_engine_convergence.py::TestEngineConvergenceIntegration::test_engine_has_convergence_detector_when_enabled PASSED [ 25%]
+tests/integration/test_engine_convergence.py::TestEngineConvergenceIntegration::test_engine_detects_convergence_with_similar_responses PASSED [ 25%]
+tests/integration/test_engine_convergence.py::TestEngineConvergenceIntegration::test_engine_no_convergence_with_changing_responses PASSED [ 26%]
+tests/integration/test_engine_convergence.py::TestEngineConvergenceIntegration::test_engine_skips_convergence_check_before_min_rounds PASSED [ 26%]
+tests/integration/test_engine_convergence.py::TestEngineConvergenceIntegration::test_convergence_detector_backend_selection PASSED [ 27%]
+tests/integration/test_engine_convergence.py::TestEngineConvergenceIntegration::test_engine_includes_convergence_info_structure PASSED [ 27%]
+tests/integration/test_evidence_based_deliberation.py::TestEvidenceBasedDeliberation::test_complete_workflow_with_file_reading FAILED [ 27%]
+
+================================== FAILURES ===================================
+___ TestEvidenceBasedDeliberation.test_complete_workflow_with_file_reading ____
+tests\integration\test_evidence_based_deliberation.py:189: in test_complete_workflow_with_file_reading
+    assert len(engine.tool_execution_history) > 0, "Tool should have been executed"
+E   AssertionError: Tool should have been executed
+E   assert 0 > 0
+E    +  where 0 = len([])
+E    +    where [] = <deliberation.engine.DeliberationEngine object at 0x0000020D6FA7B490>.tool_execution_history
+------------------------------ Captured log call ------------------------------
+INFO     ai_counsel.progress:engine.py:1056 ======================================================================\nINFO     ai_counsel.progress:engine.py:1057 \U0001f3af DELIBERATION START | Mode: conference | Rounds: 2\nINFO     ai_counsel.progress:engine.py:1058    Question: Should we approve the current implementation?\nINFO     ai_counsel.progress:engine.py:1059    Models (2): claude-sonnet-4-5@claude, gpt-4@codex\nINFO     ai_counsel.progress:engine.py:1060    Working Dir: /tmp\nINFO     ai_counsel.progress:engine.py:1061 ----------------------------------------------------------------------\nINFO     ai_counsel.progress:engine.py:1092 \U0001f4cd ROUND 1/2 START\nINFO     ai_counsel.progress:engine.py:1145 \U0001f4cd ROUND 1 COMPLETE | Time: 0.0s | Success: 2/2\nINFO     ai_counsel.progress:engine.py:1151    \u2705 claude-sonnet-4-5@claude: 432 chars\nINFO     ai_counsel.progress:engine.py:1151    \u2705 gpt-4@codex: 32 chars\nINFO     ai_counsel.progress:engine.py:1092 \U0001f4cd ROUND 2/2 START\nINFO     ai_counsel.progress:engine.py:1145 \U0001f4cd ROUND 2 COMPLETE | Time: 0.0s | Success: 2/2\nINFO     ai_counsel.progress:engine.py:1151    \u2705 claude-sonnet-4-5@claude: 39 chars\nINFO     ai_counsel.progress:engine.py:1151    \u2705 gpt-4@codex: 26 chars\nERROR    deliberation.summarizer:summarizer.py:63 Summary generation failed: \nTraceback (most recent call last):\n  File "C:\\Program Files\\Python311\\Lib\\unittest\\mock.py", line 2226, in _execute_mock_call\n    result = next(effect)\n             ^^^^^^^^^^^^\nStopIteration\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File "C:\\Users\\joelf\\ai-counsel\\deliberation\\summarizer.py", line 55, in generate_summary\n    summary_text = await self.adapter.invoke(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "C:\\Users\\joelf\\ai-counsel\\tests\\conftest.py", line 34, in invoke\n    result = await self.invoke_mock(prompt, model, context, is_deliberation, working_directory=working_directory, reasoning_effort=reasoning_effort)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File "C:\\Program Files\\Python311\\Lib\\unittest\\mock.py", line 2230, in _execute_mock_call\n    raise StopAsyncIteration\nStopAsyncIteration\nINFO     ai_counsel.progress:engine.py:1388 ----------------------------------------------------------------------\nINFO     ai_counsel.progress:engine.py:1389 \U0001f3c1 DELIBERATION COMPLETE | Time: 10.0s | Rounds: 2/2\nINFO     ai_counsel.progress:engine.py:1390    Status: complete\nINFO     ai_counsel.progress:engine.py:1392    Convergence: majority_decision (similarity: 0.14)\nINFO     ai_counsel.progress:engine.py:1394    Winner: ABSTAIN\nINFO     ai_counsel.progress:engine.py:1400    Issues: None\nINFO     ai_counsel.progress:engine.py:1401    Transcript: C:\\Users\\joelf\\AppData\\Local\\Temp\\pytest-of-joelf\\pytest-32\\test_complete_workflow_with_fi0\\transcripts\\20251225_160421_Should_we_approve_the_current_implementation.md\nINFO     ai_counsel.progress:engine.py:1402 ======================================================================
+=========================== short test summary info ===========================
+FAILED tests/integration/test_evidence_based_deliberation.py::TestEvidenceBasedDeliberation::test_complete_workflow_with_file_reading
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+================== 1 failed, 65 passed in 2654.98s (0:44:14) ==================
+Task was destroyed but it is pending!
+task: <Task pending name='Task-53' coro=<BackgroundWorker._process_queue() running at C:\Users\joelf\ai-counsel\decision_graph\workers.py:277> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task cancelling name='Task-52' coro=<DecisionGraphIntegration.store_deliberation.<locals>.enqueue_job() running at C:\Users\joelf\ai-counsel\decision_graph\integration.py:268> wait_for=<Future cancelled> cb=[set.discard()]>

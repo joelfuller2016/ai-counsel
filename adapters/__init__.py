@@ -75,6 +75,7 @@ def create_adapter(
             args=config.args,
             timeout=config.timeout,
             default_reasoning_effort=config.default_reasoning_effort,
+            max_prompt_length=config.max_prompt_length,
         )
 
     elif isinstance(config, HTTPAdapterConfig):
@@ -91,6 +92,7 @@ def create_adapter(
             max_retries=config.max_retries,
             api_key=config.api_key,
             headers=config.headers,
+            max_prompt_length=config.max_prompt_length,
         )
 
     else:

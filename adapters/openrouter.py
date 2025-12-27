@@ -18,6 +18,8 @@ class OpenRouterAdapter(BaseHTTPAdapter):
     Default endpoint: https://openrouter.ai/api/v1
     """
 
+    ADAPTER_NAME = "openrouter"
+
     def build_request(
         self, model: str, prompt: str
     ) -> Tuple[str, dict[str, str], dict]:

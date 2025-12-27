@@ -2,7 +2,7 @@
 import pytest
 
 from models.config import Config, load_config
-from models.model_registry import ModelRegistry
+from models.model_registry import ModelRegistry, ModelValidationResult
 
 
 @pytest.fixture(scope="module")
@@ -372,3 +372,225 @@ def test_enabled_field_is_stored_in_registry_entry():
     models = registry.list_for_adapter("test_adapter")
     assert len(models) == 1
     assert models[0].id == "model-1"
+
+
+# ============================================================================
+# Tests for validate_model feature (GitHub Issue #36)
+# ============================================================================
+
+
+@pytest.fixture
+def config_for_validation() -> Config:
+    """Create a config with various model names for testing validation."""
+    return _minimal_config(
+        {
+            "test_adapter": [
+                {
+                    "id": "claude-sonnet-4-5-20250929",
+                    "label": "Claude Sonnet 4.5",
+                    "enabled": True,
+                    "default": True,
+                },
+                {
+                    "id": "claude-opus-4-5-20251101",
+                    "label": "Claude Opus 4.5",
+                    "enabled": True,
+                },
+                {
+                    "id": "claude-haiku-4-5-20251001",
+                    "label": "Claude Haiku 4.5",
+                    "enabled": True,
+                },
+                {
+                    "id": "claude-3-5-sonnet-20240620",
+                    "label": "Claude 3.5 Sonnet (Legacy)",
+                    "enabled": False,
+                },
+            ]
+        }
+    )
+
+
+def test_validate_model_returns_valid_for_enabled_model(config_for_validation: Config):
+    """Test that validate_model returns valid=True for enabled models."""
+    registry = ModelRegistry(config_for_validation)
+
+    result = registry.validate_model("test_adapter", "claude-sonnet-4-5-20250929")
+
+    assert result.valid is True
+    assert result.exists is True
+    assert result.enabled is True
+    assert result.error_message is None
+    assert result.similar_models == []
+
+
+def test_validate_model_returns_invalid_for_disabled_model(
+    config_for_validation: Config,
+):
+    """Test that validate_model returns valid=False for disabled models."""
+    registry = ModelRegistry(config_for_validation)
+
+    result = registry.validate_model("test_adapter", "claude-3-5-sonnet-20240620")
+
+    assert result.valid is False
+    assert result.exists is True
+    assert result.enabled is False
+    assert result.error_message is not None
+    assert "exists but is disabled" in result.error_message
+    assert "list_models" in result.error_message
+
+
+def test_validate_model_returns_invalid_for_nonexistent_model(
+    config_for_validation: Config,
+):
+    """Test that validate_model returns valid=False for non-existent models."""
+    registry = ModelRegistry(config_for_validation)
+
+    result = registry.validate_model("test_adapter", "nonexistent-model")
+
+    assert result.valid is False
+    assert result.exists is False
+    assert result.enabled is None
+    assert result.error_message is not None
+    assert "not found" in result.error_message
+    assert "list_models" in result.error_message
+
+
+def test_validate_model_suggests_similar_models_for_typos(
+    config_for_validation: Config,
+):
+    """Test that validate_model suggests similar models for typos."""
+    registry = ModelRegistry(config_for_validation)
+
+    # Typo in model name: "sonnet" -> "sonet"
+    result = registry.validate_model("test_adapter", "claude-sonet-4-5-20250929")
+
+    assert result.valid is False
+    assert len(result.similar_models) > 0
+    assert "claude-sonnet-4-5-20250929" in result.similar_models
+    assert "Did you mean" in result.error_message
+
+
+def test_validate_model_suggests_similar_for_partial_match(
+    config_for_validation: Config,
+):
+    """Test that validate_model suggests models for partial matches."""
+    registry = ModelRegistry(config_for_validation)
+
+    # Partial match: just "opus"
+    result = registry.validate_model("test_adapter", "claude-opus")
+
+    assert result.valid is False
+    # Should suggest the full opus model name
+    assert any("opus" in m for m in result.similar_models)
+
+
+def test_validate_model_returns_valid_for_unrestricted_adapter():
+    """Test that validate_model returns valid for adapters not in registry."""
+    config = _minimal_config({})  # Empty registry
+    registry = ModelRegistry(config)
+
+    # llamacpp is unrestricted (not in registry)
+    result = registry.validate_model("llamacpp", "/path/to/any/model.gguf")
+
+    assert result.valid is True
+    assert result.exists is True
+    assert result.enabled is True
+
+
+def test_validate_model_error_message_lists_available_models():
+    """Test that error message includes available models when no similar ones."""
+    config = _minimal_config(
+        {
+            "test_adapter": [
+                {"id": "alpha-model", "label": "Alpha", "enabled": True},
+                {"id": "beta-model", "label": "Beta", "enabled": True},
+                {"id": "gamma-model", "label": "Gamma", "enabled": True},
+                {"id": "delta-model", "label": "Delta", "enabled": True},
+            ]
+        }
+    )
+    registry = ModelRegistry(config)
+
+    # Use a model name that's very different from all options
+    result = registry.validate_model("test_adapter", "completely-different-zzz-999")
+
+    assert result.valid is False
+    # Should list available models since no similar ones
+    assert "Available models:" in result.error_message or "alpha" in result.error_message.lower()
+
+
+def test_validate_model_max_suggestions_parameter():
+    """Test that max_suggestions parameter limits the suggestions."""
+    config = _minimal_config(
+        {
+            "test_adapter": [
+                {"id": "model-aaa", "label": "Model AAA", "enabled": True},
+                {"id": "model-aab", "label": "Model AAB", "enabled": True},
+                {"id": "model-aac", "label": "Model AAC", "enabled": True},
+                {"id": "model-aad", "label": "Model AAD", "enabled": True},
+                {"id": "model-aae", "label": "Model AAE", "enabled": True},
+            ]
+        }
+    )
+    registry = ModelRegistry(config)
+
+    # Request only 2 suggestions
+    result = registry.validate_model("test_adapter", "model-aa", max_suggestions=2)
+
+    assert len(result.similar_models) <= 2
+
+
+def test_validate_model_case_insensitive_matching(config_for_validation: Config):
+    """Test that similar model matching is case-insensitive."""
+    registry = ModelRegistry(config_for_validation)
+
+    # Use uppercase
+    result = registry.validate_model("test_adapter", "CLAUDE-SONNET-4-5")
+
+    assert result.valid is False
+    # Should still find the lowercase version as similar
+    assert len(result.similar_models) > 0
+
+
+def test_validate_model_disabled_model_suggests_similar_enabled():
+    """Test that for disabled models, we suggest similar enabled ones."""
+    config = _minimal_config(
+        {
+            "test_adapter": [
+                {
+                    "id": "claude-3-5-sonnet-v1",
+                    "label": "Claude 3.5 Sonnet v1",
+                    "enabled": False,
+                },
+                {
+                    "id": "claude-3-5-sonnet-v2",
+                    "label": "Claude 3.5 Sonnet v2",
+                    "enabled": True,
+                },
+            ]
+        }
+    )
+    registry = ModelRegistry(config)
+
+    result = registry.validate_model("test_adapter", "claude-3-5-sonnet-v1")
+
+    assert result.valid is False
+    assert result.exists is True
+    assert result.enabled is False
+    # Should suggest the enabled v2 version
+    assert "claude-3-5-sonnet-v2" in result.similar_models
+
+
+def test_model_validation_result_defaults():
+    """Test ModelValidationResult default values."""
+    result = ModelValidationResult(
+        valid=False,
+        model_id="test",
+        adapter="test",
+    )
+
+    assert result.exists is False
+    assert result.enabled is None
+    assert result.similar_models == []
+    assert result.error_message is None

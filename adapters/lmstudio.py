@@ -15,6 +15,8 @@ class LMStudioAdapter(BaseHTTPAdapter):
     API Reference: https://lmstudio.ai/docs/api/rest-api
     """
 
+    ADAPTER_NAME = "lmstudio"
+
     def build_request(
         self, model: str, prompt: str
     ) -> Tuple[str, dict[str, str], dict]:

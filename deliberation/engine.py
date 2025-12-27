@@ -38,7 +38,8 @@ if TYPE_CHECKING:
     from decision_graph.integration import DecisionGraphIntegration
     from deliberation.transcript import TranscriptManager
     from deliberation.tools import ToolExecutor
-    from models.schema import DeliberateRequest, DeliberationResult
+    from models.model_registry import ModelRegistry
+    from models.schema import DeliberateRequest, DeliberationResult, Summary, VotingResult
 
 
 class DeliberationEngine:
@@ -54,6 +55,7 @@ class DeliberationEngine:
         transcript_manager: Optional["TranscriptManager"] = None,
         config=None,
         server_dir: Optional[Path] = None,
+        model_registry: Optional["ModelRegistry"] = None,
     ):
         """
         Initialize deliberation engine.
@@ -63,10 +65,13 @@ class DeliberationEngine:
             transcript_manager: Optional transcript manager (creates default if None)
             config: Optional configuration object for convergence detection
             server_dir: Server directory to resolve relative paths from
+            model_registry: Optional model registry for looking up model-specific settings
+                (e.g., per-model timeouts)
         """
         self.adapters = adapters
         self.transcript_manager = transcript_manager
         self.config = config
+        self.model_registry = model_registry
 
         # Import here to avoid circular dependency
         if transcript_manager is None:
@@ -288,12 +293,20 @@ The following files are available in the working directory:
             """Invoke a single participant's adapter and return the response."""
             adapter = self.adapters[participant.cli]
 
+            # Look up model-specific timeout from registry (if available)
+            model_timeout = None
+            if self.model_registry:
+                model_timeout = self.model_registry.get_model_timeout(
+                    participant.cli, participant.model
+                )
+
             reasoning_info = f", reasoning_effort={participant.reasoning_effort}" if participant.reasoning_effort else ""
+            timeout_info = f", timeout={model_timeout}s" if model_timeout else ""
             logger.info(
                 f"Round {round_num}: Invoking {participant.model}@{participant.cli} "
                 f"with prompt_length={len(enhanced_prompt)} chars, "
                 f"context_length={len(context) if context else 0} chars, "
-                f"working_directory={working_directory}{reasoning_info}"
+                f"working_directory={working_directory}{reasoning_info}{timeout_info}"
             )
 
             try:
@@ -304,6 +317,7 @@ The following files are available in the working directory:
                     is_deliberation=True,
                     working_directory=working_directory,
                     reasoning_effort=participant.reasoning_effort,
+                    timeout_override=model_timeout,
                 )
                 logger.info(
                     f"Round {round_num}: Received response from {participant.model}@{participant.cli}, "
@@ -328,6 +342,7 @@ The following files are available in the working directory:
                                 is_deliberation=True,
                                 working_directory=working_directory,
                                 reasoning_effort=participant.reasoning_effort,
+                                timeout_override=model_timeout,
                             )
 
                             logger.info(
@@ -1014,6 +1029,92 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
 
         return False
 
+    async def _generate_summary_with_fallback(
+        self,
+        question: str,
+        responses: List[RoundResponse],
+        voting_result: Optional["VotingResult"],
+    ) -> "Summary":
+        """
+        Generate summary with graceful degradation to BasicSummarizer.
+
+        Attempts AI-powered summary first, falls back to template-based
+        BasicSummarizer if AI summarization fails or is unavailable.
+        The deliberation never fails due to summarization issues.
+
+        Args:
+            question: Original deliberation question
+            responses: All responses from all rounds
+            voting_result: Aggregated voting results (if any)
+
+        Returns:
+            Summary object (either AI-generated or template-based fallback)
+        """
+        from models.schema import Summary
+        from deliberation.summarizer import BasicSummarizer
+
+        ai_summary_failed = False
+
+        # Try AI-powered summary first
+        if self.summarizer:
+            try:
+                logger.info("Generating AI-powered summary of deliberation...")
+                summary = await self.summarizer.generate_summary(
+                    question=question, responses=responses
+                )
+
+                # Check if AI summarizer returned an error placeholder
+                # (DeliberationSummarizer catches exceptions internally)
+                if "[Summary generation failed]" in summary.consensus:
+                    logger.warning(
+                        "AI summarizer returned error placeholder. "
+                        "Falling back to BasicSummarizer."
+                    )
+                    ai_summary_failed = True
+                else:
+                    logger.info("Summary generation completed successfully")
+                    return summary
+            except Exception as e:
+                logger.warning(
+                    f"AI summary generation failed: {e}. "
+                    f"Falling back to BasicSummarizer.",
+                    exc_info=True,
+                )
+                ai_summary_failed = True
+
+        # Fallback to BasicSummarizer (no AI required)
+        if not self.summarizer or ai_summary_failed:
+            logger.info("Using BasicSummarizer for template-based summary generation")
+            try:
+                basic_summarizer = BasicSummarizer()
+                summary = basic_summarizer.generate_summary(
+                    question=question,
+                    responses=responses,
+                    voting_result=voting_result,
+                )
+                logger.info("BasicSummarizer generated fallback summary successfully")
+                return summary
+            except Exception as e:
+                # Ultimate fallback - should never happen but ensures deliberation completes
+                logger.error(
+                    f"BasicSummarizer also failed: {e}. Using minimal fallback.",
+                    exc_info=True,
+                )
+                return Summary(
+                    consensus="[Auto-generated fallback summary] Summary generation failed completely.",
+                    key_agreements=["Unable to generate summary - review full debate below"],
+                    key_disagreements=[],
+                    final_recommendation="Please review the full debate transcript for details.",
+                )
+
+        # This should never be reached, but return minimal fallback just in case
+        return Summary(
+            consensus="[Auto-generated fallback summary] No summary generated.",
+            key_agreements=["Unable to generate summary"],
+            key_disagreements=[],
+            final_recommendation="Please review the full debate transcript.",
+        )
+
     async def execute(self, request: "DeliberateRequest") -> "DeliberationResult":
         """
         Execute full deliberation with multiple rounds and optional convergence detection.
@@ -1206,33 +1307,7 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
         )
         actual_rounds_completed = round_num if is_early_stop else rounds_to_execute
 
-        # Generate AI-powered summary
-        if self.summarizer:
-            try:
-                logger.info("Generating AI-powered summary of deliberation...")
-                summary = await self.summarizer.generate_summary(
-                    question=request.question, responses=all_responses
-                )
-                logger.info("Summary generation completed successfully")
-            except Exception as e:
-                logger.error(f"Summary generation failed: {e}", exc_info=True)
-                # Fallback to placeholder on error
-                summary = Summary(
-                    consensus="[Summary generation failed]",
-                    key_agreements=["Error occurred during summary generation"],
-                    key_disagreements=[],
-                    final_recommendation="Please review the full debate below.",
-                )
-        else:
-            # No summarizer available, use placeholder
-            summary = Summary(
-                consensus="[Summary generation not available - Claude adapter required]",
-                key_agreements=["No summary available"],
-                key_disagreements=[],
-                final_recommendation="Please review the full debate below.",
-            )
-
-        # Aggregate voting results if any votes were cast
+        # Aggregate voting results FIRST (needed for fallback summary)
         voting_result = self._aggregate_votes(all_responses)
         if voting_result:
             logger.info(
@@ -1240,6 +1315,13 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
                 f"(consensus: {voting_result.consensus_reached}, "
                 f"winner: {voting_result.winning_option})"
             )
+
+        # Generate summary with graceful degradation
+        summary = await self._generate_summary_with_fallback(
+            question=request.question,
+            responses=all_responses,
+            voting_result=voting_result,
+        )
 
         # Build participant list
         participant_ids = [f"{p.model}@{p.cli}" for p in request.participants]

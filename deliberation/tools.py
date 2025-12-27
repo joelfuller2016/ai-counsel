@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from fnmatch import fnmatch
 from pathlib import Path, PurePosixPath
@@ -172,16 +173,48 @@ class BaseTool(ABC):
         pass
 
 
+class RateLimitExceededError(Exception):
+    """Raised when rate limits are exceeded for tool execution."""
+
+    def __init__(self, message: str, limit_type: str):
+        super().__init__(message)
+        self.limit_type = limit_type
+
+
 class ToolExecutor:
     """
     Orchestrates tool execution during deliberation.
 
     Parses tool requests from model responses and routes to appropriate tools.
+    Enforces rate limiting to prevent resource abuse.
     """
 
-    def __init__(self):
-        """Initialize tool executor."""
+    def __init__(self, security_config: Optional["ToolSecurityConfig"] = None):
+        """Initialize tool executor.
+
+        Args:
+            security_config: Optional security configuration for rate limiting.
+                           If not provided, default limits are used.
+        """
         self.tools: Dict[str, BaseTool] = {}
+        self.security_config = security_config
+
+        # Rate limiting configuration (from config or defaults)
+        self._max_calls_per_round = (
+            security_config.max_tool_calls_per_round if security_config else 10
+        )
+        self._max_calls_per_deliberation = (
+            security_config.max_tool_calls_per_deliberation if security_config else 50
+        )
+        self._cooldown_seconds = (
+            security_config.tool_cooldown_seconds if security_config else 0.5
+        )
+
+        # Rate limiting state
+        self._round_call_count: int = 0
+        self._deliberation_call_count: int = 0
+        self._last_call_time: float = 0.0
+        self._current_round: int = 0
 
     def register_tool(self, tool: BaseTool) -> None:
         """
@@ -192,6 +225,108 @@ class ToolExecutor:
         """
         self.tools[tool.name] = tool
         logger.info(f"Registered tool: {tool.name}")
+
+    def start_new_round(self, round_number: int) -> None:
+        """
+        Signal the start of a new deliberation round.
+
+        Resets per-round rate limiting counters.
+
+        Args:
+            round_number: The round number (1-indexed)
+        """
+        self._current_round = round_number
+        self._round_call_count = 0
+        logger.debug(
+            f"Started round {round_number}, reset round call count. "
+            f"Deliberation total: {self._deliberation_call_count}/{self._max_calls_per_deliberation}"
+        )
+
+    def start_new_deliberation(self) -> None:
+        """
+        Signal the start of a new deliberation session.
+
+        Resets all rate limiting counters.
+        """
+        self._round_call_count = 0
+        self._deliberation_call_count = 0
+        self._last_call_time = 0.0
+        self._current_round = 0
+        logger.debug("Started new deliberation, reset all rate limiting counters")
+
+    def get_rate_limit_status(self) -> Dict[str, any]:
+        """
+        Get current rate limiting status.
+
+        Returns:
+            Dictionary with current counts and limits
+        """
+        return {
+            "current_round": self._current_round,
+            "round_calls": self._round_call_count,
+            "max_round_calls": self._max_calls_per_round,
+            "deliberation_calls": self._deliberation_call_count,
+            "max_deliberation_calls": self._max_calls_per_deliberation,
+            "cooldown_seconds": self._cooldown_seconds,
+            "time_since_last_call": time.monotonic() - self._last_call_time
+            if self._last_call_time > 0
+            else None,
+        }
+
+    async def _enforce_rate_limits(self, tool_name: str) -> Optional[ToolResult]:
+        """
+        Check and enforce rate limits before tool execution.
+
+        Args:
+            tool_name: Name of the tool being executed
+
+        Returns:
+            ToolResult with error if rate limit exceeded, None if OK to proceed
+        """
+        # Check deliberation-level limit
+        if self._deliberation_call_count >= self._max_calls_per_deliberation:
+            error_msg = (
+                f"Rate limit exceeded: Maximum {self._max_calls_per_deliberation} "
+                f"tool calls per deliberation reached. "
+                f"Current count: {self._deliberation_call_count}. "
+                f"This limit prevents resource exhaustion during long deliberations."
+            )
+            logger.warning(f"Tool '{tool_name}' blocked: {error_msg}")
+            return ToolResult(
+                tool_name=tool_name,
+                success=False,
+                output=None,
+                error=error_msg,
+            )
+
+        # Check round-level limit
+        if self._round_call_count >= self._max_calls_per_round:
+            error_msg = (
+                f"Rate limit exceeded: Maximum {self._max_calls_per_round} "
+                f"tool calls per round reached in round {self._current_round}. "
+                f"Current count: {self._round_call_count}. "
+                f"Wait for the next round to make more tool calls."
+            )
+            logger.warning(f"Tool '{tool_name}' blocked: {error_msg}")
+            return ToolResult(
+                tool_name=tool_name,
+                success=False,
+                output=None,
+                error=error_msg,
+            )
+
+        # Enforce cooldown between calls
+        if self._last_call_time > 0 and self._cooldown_seconds > 0:
+            elapsed = time.monotonic() - self._last_call_time
+            if elapsed < self._cooldown_seconds:
+                wait_time = self._cooldown_seconds - elapsed
+                logger.debug(
+                    f"Cooldown enforced for tool '{tool_name}': "
+                    f"waiting {wait_time:.3f}s"
+                )
+                await asyncio.sleep(wait_time)
+
+        return None  # OK to proceed
 
     def parse_tool_requests(self, response_text: str) -> List[ToolRequest]:
         """
@@ -237,6 +372,11 @@ class ToolExecutor:
         """
         Execute a tool request.
 
+        Enforces rate limiting before execution:
+        - Per-round limit (default: 10 calls)
+        - Per-deliberation limit (default: 50 calls)
+        - Cooldown between calls (default: 0.5 seconds)
+
         Args:
             request: The tool request to execute
             working_directory: Optional working directory to change to before executing tool
@@ -244,6 +384,11 @@ class ToolExecutor:
         Returns:
             ToolResult with execution outcome
         """
+        # Enforce rate limits before execution
+        rate_limit_result = await self._enforce_rate_limits(request.name)
+        if rate_limit_result is not None:
+            return rate_limit_result
+
         tool = self.tools.get(request.name)
 
         if not tool:
@@ -259,6 +404,17 @@ class ToolExecutor:
             effective_working_directory = request.arguments.get("working_directory")
 
         try:
+            # Update rate limiting counters before execution
+            self._round_call_count += 1
+            self._deliberation_call_count += 1
+            self._last_call_time = time.monotonic()
+
+            logger.debug(
+                f"Executing tool '{request.name}' "
+                f"(round: {self._round_call_count}/{self._max_calls_per_round}, "
+                f"total: {self._deliberation_call_count}/{self._max_calls_per_deliberation})"
+            )
+
             execution_arguments = dict(request.arguments)
             if effective_working_directory:
                 execution_arguments["working_directory"] = effective_working_directory

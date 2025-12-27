@@ -1,22 +1,25 @@
 """Gemini CLI adapter."""
+from typing import Optional
+
 from adapters.base import BaseCLIAdapter
 
 
 class GeminiAdapter(BaseCLIAdapter):
-    """Adapter for gemini CLI tool (Google AI)."""
+    """Adapter for gemini CLI tool (Google AI).
 
-    # Gemini API limits (conservative estimates based on production errors)
-    # Gemini API rejects prompts around 30k+ tokens
-    # Use 100k characters as safe threshold (~25k tokens at 4 chars/token)
-    # This prevents "invalid argument" API errors seen in production
-    MAX_PROMPT_CHARS = 100000
+    Note:
+        Prompt length validation is handled by the base class.
+        Default limit is 100,000 characters (~25k tokens at 4 chars/token),
+        which prevents "invalid argument" API errors seen in production.
+    """
 
     def __init__(
         self,
         command: str = "gemini",
-        args: list[str] | None = None,
+        args: Optional[list[str]] = None,
         timeout: int = 60,
-        default_reasoning_effort: str | None = None,
+        default_reasoning_effort: Optional[str] = None,
+        max_prompt_length: Optional[int] = None,
     ):
         """
         Initialize Gemini adapter.
@@ -26,6 +29,8 @@ class GeminiAdapter(BaseCLIAdapter):
             args: List of argument templates (from config.yaml)
             timeout: Timeout in seconds (default: 60)
             default_reasoning_effort: Ignored (Gemini doesn't support reasoning effort)
+            max_prompt_length: Maximum prompt length in characters. If not specified,
+                uses default of 100,000 characters from base class.
 
         Note:
             The gemini CLI uses `gemini -p "prompt"` or `gemini -m model -p "prompt"` syntax.
@@ -37,19 +42,8 @@ class GeminiAdapter(BaseCLIAdapter):
             args=args,
             timeout=timeout,
             default_reasoning_effort=default_reasoning_effort,
+            max_prompt_length=max_prompt_length,
         )
-
-    def validate_prompt_length(self, prompt: str) -> bool:
-        """
-        Validate that prompt length is within Gemini API limits.
-
-        Args:
-            prompt: The prompt text to validate
-
-        Returns:
-            True if prompt is valid length, False if too long
-        """
-        return len(prompt) <= self.MAX_PROMPT_CHARS
 
     def parse_output(self, raw_output: str) -> str:
         """

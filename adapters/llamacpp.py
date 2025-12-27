@@ -38,10 +38,11 @@ class LlamaCppAdapter(BaseCLIAdapter):
     def __init__(
         self,
         command: str = "llama-cli",
-        args: list[str] | None = None,
+        args: Optional[list[str]] = None,
         timeout: int = 120,
-        search_paths: list[str] | None = None,
-        default_reasoning_effort: str | None = None,
+        search_paths: Optional[list[str]] = None,
+        default_reasoning_effort: Optional[str] = None,
+        max_prompt_length: Optional[int] = None,
     ):
         """
         Initialize llama.cpp adapter with auto-discovery.
@@ -52,6 +53,8 @@ class LlamaCppAdapter(BaseCLIAdapter):
             timeout: Timeout in seconds (default: 120, as local inference can be slow)
             search_paths: Custom search paths for models (uses DEFAULT_SEARCH_PATHS if None)
             default_reasoning_effort: Ignored (llama.cpp doesn't support reasoning effort)
+            max_prompt_length: Maximum prompt length in characters. If not specified,
+                uses default of 32,000 characters from base class.
 
         Raises:
             ValueError: If args is not provided
@@ -63,6 +66,7 @@ class LlamaCppAdapter(BaseCLIAdapter):
             args=args,
             timeout=timeout,
             default_reasoning_effort=default_reasoning_effort,
+            max_prompt_length=max_prompt_length,
         )
         self.search_paths = search_paths or self.DEFAULT_SEARCH_PATHS
 

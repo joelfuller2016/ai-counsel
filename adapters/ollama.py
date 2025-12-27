@@ -18,6 +18,8 @@ class OllamaAdapter(BaseHTTPAdapter):
         result = await adapter.invoke(prompt="What is 2+2?", model="llama2")
     """
 
+    ADAPTER_NAME = "ollama"
+
     def build_request(
         self, model: str, prompt: str
     ) -> Tuple[str, dict[str, str], dict]:

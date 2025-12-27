@@ -21,9 +21,10 @@ class DroidAdapter(BaseCLIAdapter):
     def __init__(
         self,
         command: str = "droid",
-        args: list[str] | None = None,
+        args: Optional[list[str]] = None,
         timeout: int = 60,
         default_reasoning_effort: Optional[str] = None,
+        max_prompt_length: Optional[int] = None,
     ):
         """
         Initialize Droid adapter.
@@ -34,6 +35,8 @@ class DroidAdapter(BaseCLIAdapter):
             timeout: Timeout in seconds (default: 60)
             default_reasoning_effort: Default reasoning effort level (off/low/medium/high).
                 Can be overridden per-participant at invocation time.
+            max_prompt_length: Maximum prompt length in characters. If not specified,
+                uses default of 100,000 characters from base class.
 
         Note:
             The droid CLI uses `droid exec "prompt"` syntax for non-interactive mode.
@@ -48,6 +51,7 @@ class DroidAdapter(BaseCLIAdapter):
             args=args,
             timeout=timeout,
             default_reasoning_effort=default_reasoning_effort,
+            max_prompt_length=max_prompt_length,
         )
         self._successful_method: Optional[Literal["skip-permissions"]] = None
 
@@ -237,14 +241,14 @@ class DroidAdapter(BaseCLIAdapter):
         if context:
             full_prompt = f"{context}\n\n{prompt}"
 
-        # Validate prompt length if adapter supports it
-        if hasattr(self, "validate_prompt_length"):
-            if not self.validate_prompt_length(full_prompt):
-                raise ValueError(
-                    f"Prompt too long ({len(full_prompt)} chars). "
-                    f"Maximum allowed: {getattr(self, 'MAX_PROMPT_CHARS', 'unknown')} chars. "
-                    "This prevents API rejection errors."
-                )
+        # Validate prompt length
+        if not self.validate_prompt_length(full_prompt):
+            raise ValueError(
+                f"Prompt too long ({len(full_prompt):,} characters). "
+                f"Maximum allowed for {self.command}: {self.max_prompt_length:,} characters. "
+                f"Consider reducing context or breaking into smaller chunks. "
+                f"This validation prevents API rejection errors."
+            )
 
         # Adjust args based on context
         args = self._adjust_args_for_context(is_deliberation)

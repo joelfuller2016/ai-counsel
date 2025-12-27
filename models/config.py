@@ -25,6 +25,16 @@ class CLIAdapterConfig(BaseModel):
             "Ignored by other adapters. Can be overridden per-participant."
         ),
     )
+    max_prompt_length: Optional[int] = Field(
+        default=None,
+        ge=1000,
+        le=1_000_000,
+        description=(
+            "Maximum prompt length in characters. If not specified, uses adapter-specific "
+            "defaults: claude=200000, codex=100000, droid=100000, gemini=100000, llamacpp=32000. "
+            "Prompts exceeding this limit will be rejected with a helpful error message."
+        ),
+    )
 
 
 class HTTPAdapterConfig(BaseModel):
@@ -36,6 +46,16 @@ class HTTPAdapterConfig(BaseModel):
     headers: Optional[dict[str, str]] = None
     timeout: int = 60
     max_retries: int = 3
+    max_prompt_length: Optional[int] = Field(
+        default=None,
+        ge=1000,
+        le=1_000_000,
+        description=(
+            "Maximum prompt length in characters. If not specified, uses adapter-specific "
+            "defaults: ollama=50000, lmstudio=50000, openrouter=100000. "
+            "Prompts exceeding this limit will be rejected with a helpful error message."
+        ),
+    )
 
     @field_validator("api_key", "base_url")
     @classmethod
@@ -115,6 +135,15 @@ class ModelDefinition(BaseModel):
     note: Optional[str] = Field(
         None, description="Optional additional guidance about the model"
     )
+    timeout: Optional[int] = Field(
+        None,
+        ge=1,
+        le=600,
+        description=(
+            "Model-specific timeout in seconds. If not set, uses adapter timeout. "
+            "Useful for reasoning models that require longer response times."
+        ),
+    )
 
 
 class StorageConfig(BaseModel):
@@ -181,6 +210,24 @@ class ToolSecurityConfig(BaseModel):
         ge=1024,
         le=10_485_760,  # 10MB
         description="Maximum file size for read_file tool",
+    )
+    max_tool_calls_per_round: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum number of tool calls allowed per deliberation round",
+    )
+    max_tool_calls_per_deliberation: int = Field(
+        default=50,
+        ge=1,
+        le=500,
+        description="Maximum total tool calls allowed per deliberation session",
+    )
+    tool_cooldown_seconds: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=10.0,
+        description="Minimum time in seconds between consecutive tool calls",
     )
 
 

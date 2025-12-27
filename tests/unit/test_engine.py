@@ -1411,3 +1411,171 @@ class TestEngineContextEfficiency:
 
         assert "Round 1" in context
         assert "Round 1 response" in context
+
+
+class TestEngineSummaryFallback:
+    """Tests for summary generation with graceful degradation."""
+
+    @pytest.mark.asyncio
+    async def test_fallback_when_no_summarizer_available(self):
+        """Test that BasicSummarizer is used when no AI summarizer is available."""
+        from models.schema import VotingResult, RoundVote, Summary
+
+        engine = DeliberationEngine({})
+
+        responses = [
+            RoundResponse(
+                round=1,
+                participant="model@cli",
+                response="This is a substantive test response for analysis.",
+                timestamp=datetime.now().isoformat(),
+            )
+        ]
+        voting = VotingResult(
+            final_tally={"Option A": 1},
+            votes_by_round=[
+                RoundVote(
+                    round=1,
+                    participant="model@cli",
+                    vote=Vote(option="Option A", confidence=0.9, rationale="test"),
+                    timestamp=datetime.now().isoformat(),
+                )
+            ],
+            consensus_reached=True,
+            winning_option="Option A",
+        )
+
+        summary = await engine._generate_summary_with_fallback(
+            question="test question",
+            responses=responses,
+            voting_result=voting,
+        )
+
+        assert isinstance(summary, Summary)
+        assert "[Auto-generated fallback summary]" in summary.consensus
+        assert "Option A" in summary.consensus
+
+    @pytest.mark.asyncio
+    async def test_fallback_when_ai_summarizer_fails(self, mocker):
+        """Test fallback to BasicSummarizer when AI summarizer raises exception."""
+        from models.schema import VotingResult, RoundVote, Summary
+        from deliberation.summarizer import DeliberationSummarizer
+
+        # Create mock adapter that fails
+        mock_adapter = mocker.Mock()
+        mock_adapter.invoke = mocker.AsyncMock(side_effect=Exception("API Error"))
+
+        engine = DeliberationEngine({"claude": mock_adapter})
+        # Manually set up a summarizer that will fail
+        engine.summarizer = DeliberationSummarizer(mock_adapter, "test-model")
+
+        responses = [
+            RoundResponse(
+                round=1,
+                participant="model@cli",
+                response="Test response content.",
+                timestamp=datetime.now().isoformat(),
+            )
+        ]
+        voting = VotingResult(
+            final_tally={"Option B": 1},
+            votes_by_round=[
+                RoundVote(
+                    round=1,
+                    participant="model@cli",
+                    vote=Vote(option="Option B", confidence=0.8, rationale="test"),
+                    timestamp=datetime.now().isoformat(),
+                )
+            ],
+            consensus_reached=True,
+            winning_option="Option B",
+        )
+
+        summary = await engine._generate_summary_with_fallback(
+            question="test question",
+            responses=responses,
+            voting_result=voting,
+        )
+
+        # Should fall back to BasicSummarizer
+        assert isinstance(summary, Summary)
+        assert "[Auto-generated fallback summary]" in summary.consensus
+        assert "Option B" in summary.consensus
+
+    @pytest.mark.asyncio
+    async def test_fallback_includes_voting_results(self):
+        """Test that fallback summary includes voting results when available."""
+        from models.schema import VotingResult, RoundVote, Summary
+
+        engine = DeliberationEngine({})
+
+        responses = [
+            RoundResponse(
+                round=1,
+                participant="model1@cli",
+                response="Model 1 thinks Option A is better for performance.",
+                timestamp=datetime.now().isoformat(),
+            ),
+            RoundResponse(
+                round=1,
+                participant="model2@cli",
+                response="Model 2 agrees that Option A is the right choice.",
+                timestamp=datetime.now().isoformat(),
+            ),
+        ]
+        voting = VotingResult(
+            final_tally={"Option A": 2},
+            votes_by_round=[
+                RoundVote(
+                    round=1,
+                    participant="model1@cli",
+                    vote=Vote(option="Option A", confidence=0.9, rationale="performance"),
+                    timestamp=datetime.now().isoformat(),
+                ),
+                RoundVote(
+                    round=1,
+                    participant="model2@cli",
+                    vote=Vote(option="Option A", confidence=0.85, rationale="agreement"),
+                    timestamp=datetime.now().isoformat(),
+                ),
+            ],
+            consensus_reached=True,
+            winning_option="Option A",
+        )
+
+        summary = await engine._generate_summary_with_fallback(
+            question="Which option?",
+            responses=responses,
+            voting_result=voting,
+        )
+
+        assert isinstance(summary, Summary)
+        assert "Consensus reached" in summary.consensus
+        assert "2/2 votes" in summary.consensus
+        assert "Option A" in summary.final_recommendation
+
+    @pytest.mark.asyncio
+    async def test_fallback_handles_no_voting_result(self):
+        """Test that fallback summary works when no voting result is available."""
+        from models.schema import Summary
+
+        engine = DeliberationEngine({})
+
+        responses = [
+            RoundResponse(
+                round=1,
+                participant="model@cli",
+                response="Analysis without explicit vote.",
+                timestamp=datetime.now().isoformat(),
+            )
+        ]
+
+        summary = await engine._generate_summary_with_fallback(
+            question="test question",
+            responses=responses,
+            voting_result=None,
+        )
+
+        assert isinstance(summary, Summary)
+        assert "[Auto-generated fallback summary]" in summary.consensus
+        assert "No voting data" in summary.consensus

@@ -172,12 +172,17 @@ defaults:
   timeout_per_round: 120
 
 model_registry:
+  # Per-model timeout configuration:
+  # - timeout: Optional model-specific timeout in seconds (1-600)
+  # - If not set, uses adapter timeout from cli_tools/adapters section
+  # - Useful for reasoning models that require longer response times
   claude:
     - id: "claude-opus-4-5-20251101"
       label: "Claude Opus 4.5"
       tier: "premium"
       default: true
       enabled: true
+      timeout: 300  # Reasoning model - needs extended timeout
     - id: "claude-sonnet-4-5-20250929"
       label: "Claude Sonnet 4.5"
       tier: "balanced"
@@ -190,6 +195,7 @@ model_registry:
       label: "Claude Opus 4.1"
       tier: "premium"
       enabled: false
+      timeout: 300  # Reasoning model - needs extended timeout
   codex:
     - id: "gpt-5.2-codex"
       label: "GPT-5.2 Codex"
@@ -200,6 +206,7 @@ model_registry:
       label: "GPT-5.1 Codex Max"
       tier: "flagship"
       enabled: true
+      timeout: 300  # Max reasoning model - needs extended timeout
     - id: "gpt-5.1-codex-mini"
       label: "GPT-5.1 Codex Mini"
       tier: "speed"
@@ -214,6 +221,7 @@ model_registry:
       tier: "premium"
       default: true
       enabled: true
+      timeout: 300  # Reasoning model - needs extended timeout
     - id: "claude-sonnet-4-5-20250929"
       label: "Claude Sonnet 4.5 (via Droid)"
       tier: "balanced"
@@ -270,6 +278,7 @@ model_registry:
       label: "DeepSeek R1 (OpenRouter)"
       tier: "reasoning"
       enabled: true
+      timeout: 300  # Reasoning model - needs extended timeout
     - id: "qwen/qwen-2.5-72b-instruct"
       label: "Qwen 2.5 72B (OpenRouter)"
       tier: "general"
