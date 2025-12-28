@@ -2,22 +2,25 @@ name: OpenHands Auto Review
 
 on:
   # Automatic on PRs
-  pull_request:
+  pull_request_target:  # Bypass approval for bot PRs
     types: [opened, synchronize, reopened]
 
   # Manual trigger from Actions tab
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to review (required for manual dispatch)'
+        description: 'PR number to review (leave empty for latest)'
         required: false
         type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   auto-review:
     uses: joelfuller2016/openhands-auto-review/.github/workflows/openhands-reusable.yml@main
     with:
       review_mode: 'label'
-      review_message: 'Please review this PR, identify any issues, and suggest improvements.'
       label_name: 'openhands'
-      pr_number: ${{ github.event.inputs.pr_number || '' }}

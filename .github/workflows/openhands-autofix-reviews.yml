@@ -1,0 +1,62 @@
+name: OpenHands Auto-Fix Reviews
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  pull-requests: write
+  contents: write
+  issues: write
+
+jobs:
+  autofix-on-changes-requested:
+    runs-on: ubuntu-latest
+    if: github.event.review.state == 'changes_requested'
+    steps:
+      - name: Request OpenHands fix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reviewer = context.payload.review.user.login;
+            const body = context.payload.review.body || 'Changes requested';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: '## 🔧 Auto-Fix Triggered\n\n**Reviewer:** ' + reviewer + '\n\n@openhands please fix all issues from the review:\n\n> ' + body.substring(0, 1000) + '\n\nCommit fixes directly to this branch.'
+            });
+
+      - name: Assign Copilot as backup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                assignees: ['copilot-swe-agent']
+              });
+              console.log('Assigned copilot-swe-agent');
+            } catch (e) {
+              console.log('Could not assign Copilot:', e.message);
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: '@copilot Please help fix the review issues above.'
+              });
+            }
+
+      - name: Add auto-fix label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['auto-fix-requested']
+            });
