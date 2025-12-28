@@ -5,7 +5,7 @@ operations, demonstrating the latency improvements from the two-tier cache.
 """
 
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -25,7 +25,7 @@ def storage_with_decisions():
         decision = DecisionNode(
             id=f"dec{i:03d}",
             question=f"Should we adopt technology {i}?",
-            timestamp=datetime.now(UTC),
+            timestamp=datetime.now(timezone.utc),
             participants=["claude", "codex", "droid"],
             convergence_status="converged",
             consensus=f"Technology {i} is recommended for use case {i}",

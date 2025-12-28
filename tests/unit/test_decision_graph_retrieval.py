@@ -1,7 +1,7 @@
 """Unit tests for DecisionRetriever with caching integration."""
 
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -26,7 +26,7 @@ def sample_decisions():
         DecisionNode(
             id="dec1",
             question="Should we use React or Vue?",
-            timestamp=datetime.now(UTC),
+            timestamp=datetime.now(timezone.utc),
             participants=["claude", "codex"],
             convergence_status="converged",
             consensus="React is preferred for larger applications",
@@ -36,7 +36,7 @@ def sample_decisions():
         DecisionNode(
             id="dec2",
             question="What database should we use?",
-            timestamp=datetime.now(UTC),
+            timestamp=datetime.now(timezone.utc),
             participants=["claude", "codex"],
             convergence_status="converged",
             consensus="PostgreSQL is recommended",
@@ -46,7 +46,7 @@ def sample_decisions():
         DecisionNode(
             id="dec3",
             question="Should we adopt TypeScript?",
-            timestamp=datetime.now(UTC),
+            timestamp=datetime.now(timezone.utc),
             participants=["claude", "codex"],
             convergence_status="converged",
             consensus="TypeScript provides better type safety",
@@ -858,7 +858,7 @@ class TestDecisionRetrieverConfidenceRanking:
                 DecisionNode(
                     id=f"dec{i}",
                     question=f"Question {i}",
-                    timestamp=datetime.now(UTC),
+                    timestamp=datetime.now(timezone.utc),
                     participants=["claude"],
                     convergence_status="converged",
                     consensus=f"Consensus {i}",
