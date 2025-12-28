@@ -86,6 +86,10 @@ QUICK_START_ANNOUNCEMENT.md
 # Decision graph database (user-generated, not shared across clones)
 decision_graph.db
 
+# SQLite test artifacts
+test.db
+*.db.tmp
+
 # Local project files (user-specific, never commit)
 CHANGELOG.md
 project-progress.yml
