@@ -1,0 +1,248 @@
+name: Force Copilot Auto-Implement
+
+# Assigns Copilot coding agent to issues using REST API
+# Reference: https://github.blog/changelog/2025-12-03-assign-issues-to-copilot-using-the-api/
+# IMPORTANT: Requires COPILOT_PAT with 'copilot' scope or Copilot enabled on repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Specific issue number (leave empty for all)'
+        required: false
+        type: string
+      batch_size:
+        description: 'Number of issues to process'
+        required: false
+        default: '20'
+        type: string
+      priority_filter:
+        description: 'Filter by priority label'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - high priority
+          - medium
+          - low-priority
+  schedule:
+    - cron: '0 */4 * * *'  # Every 4 hours instead of every 30 min
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+env:
+  GH_TOKEN: ${{ secrets.COPILOT_PAT || secrets.GITHUB_TOKEN }}
+
+jobs:
+  assign-copilot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get eligible issues
+        id: get-issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const specificIssue = '${{ github.event.inputs.issue_number }}';
+            const batchSize = parseInt('${{ github.event.inputs.batch_size }}' || '20');
+            const priorityFilter = '${{ github.event.inputs.priority_filter }}' || 'all';
+
+            if (specificIssue) {
+              core.setOutput('issues', specificIssue);
+              return;
+            }
+
+            // Get all open issues
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            // Get open PRs to check for linked issues
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            // Build set of issues that already have PRs
+            const prLinkedIssues = new Set();
+            for (const pr of prs.data) {
+              const body = pr.body || '';
+              const title = pr.title || '';
+              const matches = [...body.matchAll(/#(\d+)/g), ...title.matchAll(/#(\d+)/g)];
+              matches.forEach(m => prLinkedIssues.add(parseInt(m[1])));
+            }
+
+            // Filter issues
+            const eligibleIssues = issues.data
+              .filter(i => !i.pull_request) // Not a PR
+              .filter(i => !prLinkedIssues.has(i.number)) // No linked PR
+              .filter(i => {
+                const labels = i.labels.map(l => l.name.toLowerCase());
+                // Skip if already assigned to copilot
+                const assignees = i.assignees.map(a => a.login.toLowerCase());
+                if (assignees.some(a => a.includes('copilot'))) return false;
+                // Skip if already has copilot-assigned label
+                if (labels.includes('copilot-assigned')) return false;
+                // Apply priority filter
+                if (priorityFilter !== 'all') {
+                  return labels.includes(priorityFilter);
+                }
+                return true;
+              })
+              .slice(0, batchSize)
+              .map(i => i.number);
+
+            console.log(`Found ${eligibleIssues.length} eligible issues for Copilot assignment`);
+            core.setOutput('issues', eligibleIssues.join(','));
+            core.setOutput('count', eligibleIssues.length);
+
+      - name: Assign Copilot to issues
+        if: steps.get-issues.outputs.issues != ''
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          IFS=',' read -ra ISSUES <<< "${{ steps.get-issues.outputs.issues }}"
+
+          for ISSUE_NUM in "${ISSUES[@]}"; do
+            echo "=== Processing issue #$ISSUE_NUM ==="
+
+            # Method 1: Direct REST API assignment (preferred)
+            # This is the official way per GitHub docs
+            echo "Attempting Copilot assignment via REST API..."
+            RESULT=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM/assignees \
+              -X POST \
+              -f 'assignees[]=copilot-swe-agent' 2>&1) || true
+
+            if echo "$RESULT" | grep -q "copilot"; then
+              echo "✅ Successfully assigned copilot-swe-agent to #$ISSUE_NUM"
+            else
+              echo "⚠️ REST API assignment result: $RESULT"
+
+              # Method 2: Try alternative Copilot user
+              gh api repos/${{ github.repository }}/issues/$ISSUE_NUM/assignees \
+                -X POST \
+                -f 'assignees[]=Copilot' 2>&1 || true
+            fi
+
+            # Add tracking label
+            gh issue edit $ISSUE_NUM --add-label "copilot-assigned,in-progress,stage-2-implementation" 2>&1 || true
+
+            # Remove planning labels
+            gh issue edit $ISSUE_NUM --remove-label "needs-plan,stage-1-planning" 2>&1 || true
+
+            sleep 1
+          done
+
+      - name: Request implementation via comment
+        if: steps.get-issues.outputs.issues != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = '${{ steps.get-issues.outputs.issues }}'.split(',').filter(Boolean);
+
+            for (const issueNumber of issues) {
+              try {
+                // Get issue details for context
+                const issue = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber)
+                });
+
+                const labels = issue.data.labels.map(l => l.name);
+                const isHighPriority = labels.some(l => l.includes('high') || l.includes('critical'));
+                const isSecurity = labels.some(l => l.includes('security'));
+
+                // Construct focused implementation request
+                let prompt = `## 🤖 Copilot Implementation Request\n\n`;
+                prompt += `@copilot Please implement this issue:\n\n`;
+                prompt += `### Requirements\n`;
+                prompt += `1. Analyze the issue description and any linked requirements\n`;
+                prompt += `2. Implement the solution following existing code patterns\n`;
+                prompt += `3. Add appropriate error handling\n`;
+
+                if (isSecurity) {
+                  prompt += `4. **SECURITY**: Follow OWASP best practices\n`;
+                }
+
+                prompt += `5. Include unit tests using xUnit\n`;
+                prompt += `6. Create a PR when complete\n\n`;
+
+                if (isHighPriority) {
+                  prompt += `⚡ **Priority**: This is a high-priority issue.\n`;
+                }
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueNumber),
+                  body: prompt
+                });
+
+                console.log(`✅ Posted implementation request to #${issueNumber}`);
+              } catch (error) {
+                console.log(`❌ Error on #${issueNumber}: ${error.message}`);
+              }
+
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Copilot Assignment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Issues processed: ${{ steps.get-issues.outputs.count || 0 }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Issues: ${{ steps.get-issues.outputs.issues || 'none' }}" >> $GITHUB_STEP_SUMMARY
+
+  verify-assignments:
+    runs-on: ubuntu-latest
+    needs: assign-copilot
+    if: always()
+    steps:
+      - name: Verify Copilot assignments
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'copilot-assigned',
+              per_page: 50
+            });
+
+            let verified = 0;
+            let unassigned = 0;
+
+            for (const issue of issues.data) {
+              const assignees = issue.assignees.map(a => a.login.toLowerCase());
+              if (assignees.some(a => a.includes('copilot'))) {
+                verified++;
+              } else {
+                unassigned++;
+                console.log(`⚠️ Issue #${issue.number} has copilot-assigned label but no Copilot assignee`);
+              }
+            }
+
+            console.log(`\n📊 Verification: ${verified} verified, ${unassigned} need attention`);
+
+            core.summary
+              .addHeading('Copilot Assignment Verification')
+              .addTable([
+                [{data: 'Status', header: true}, {data: 'Count', header: true}],
+                ['Verified', verified.toString()],
+                ['Needs Attention', unassigned.toString()]
+              ])
+              .write();
