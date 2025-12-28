@@ -6,6 +6,7 @@ Tests for:
 - OpenRouterModelDiscovery.filter_free_models()
 - OpenRouterModelDiscovery.categorize_free_models()
 """
+
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch

@@ -1,4 +1,5 @@
 """Pydantic models for AI Counsel."""
+
 from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -58,7 +59,7 @@ class DeliberateRequest(BaseModel):
     )
     working_directory: str = Field(
         ...,
-        description="Working directory for tool execution (tools resolve relative paths from here). Required for deliberations using evidence-based tools."
+        description="Working directory for tool execution (tools resolve relative paths from here). Required for deliberations using evidence-based tools.",
     )
 
 
@@ -84,7 +85,8 @@ class Vote(BaseModel):
     """Model for an individual vote with confidence and rationale."""
 
     option: str = Field(
-        ..., description="The voting option (e.g., 'Option A', 'Yes', 'Approve', 'ABSTAIN')"
+        ...,
+        description="The voting option (e.g., 'Option A', 'Yes', 'Approve', 'ABSTAIN')",
     )
     confidence: float = Field(
         ..., ge=0.0, le=1.0, description="Confidence level in this vote (0.0-1.0)"
@@ -126,7 +128,7 @@ class VotingResult(BaseModel):
     final_tally: Dict[str, int] = Field(..., description="Final vote counts by option")
     weighted_tally: Dict[str, float] = Field(
         default_factory=dict,
-        description="Confidence-weighted vote totals by option (sum of confidence scores)"
+        description="Confidence-weighted vote totals by option (sum of confidence scores)",
     )
     votes_by_round: List[RoundVote] = Field(
         ..., description="All votes organized by round"
@@ -137,19 +139,18 @@ class VotingResult(BaseModel):
     )
     abstain_count: int = Field(
         default=0,
-        description="Number of ABSTAIN votes (not counted in majority calculation)"
+        description="Number of ABSTAIN votes (not counted in majority calculation)",
     )
     abstain_rate_by_model: Dict[str, float] = Field(
         default_factory=dict,
-        description="Abstain rate (0.0-1.0) for each model participant"
+        description="Abstain rate (0.0-1.0) for each model participant",
     )
     vote_changes: List[VoteChange] = Field(
-        default_factory=list,
-        description="List of vote changes detected between rounds"
+        default_factory=list, description="List of vote changes detected between rounds"
     )
     vote_stability: float = Field(
         default=1.0,
-        description="Vote stability metric (0.0-1.0): 1.0 = no changes, 0.0 = all votes changed"
+        description="Vote stability metric (0.0-1.0): 1.0 = no changes, 0.0 = all votes changed",
     )
 
 
@@ -208,8 +209,6 @@ class ConvergenceInfo(BaseModel):
     )
 
 
-
-
 class CostSavings(BaseModel):
     """Cost savings report for free model deliberations.
 
@@ -258,6 +257,7 @@ class CostSavings(BaseModel):
         description="Cost breakdown by model (model_id -> estimated_cost)",
     )
 
+
 class DeliberationResult(BaseModel):
     """Model for complete deliberation result."""
 
@@ -288,4 +288,3 @@ class DeliberationResult(BaseModel):
         None,
         description="Cost savings report for free model deliberations (None if cost tracking disabled)",
     )
-

@@ -1,4 +1,5 @@
 """Unit tests for BaseHTTPAdapter."""
+
 import asyncio
 from typing import Optional
 from unittest.mock import AsyncMock, Mock, patch
@@ -563,7 +564,9 @@ class TestHTTPAdapterFallback:
                 return response_json["response"]
 
         mock_client = AsyncMock()
-        mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection failed"))
+        mock_client.post = AsyncMock(
+            side_effect=httpx.ConnectError("Connection failed")
+        )
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_class.return_value = mock_client
@@ -682,9 +685,7 @@ class TestHTTPAdapterFallback:
             def parse_response(self, response_json):
                 return response_json["response"]
 
-        adapter = TestAdapter(
-            base_url="http://test", timeout=60, max_prompt_length=10
-        )
+        adapter = TestAdapter(base_url="http://test", timeout=60, max_prompt_length=10)
 
         # Long prompt should raise ValueError without trying fallbacks
         with pytest.raises(ValueError, match="Prompt too long"):

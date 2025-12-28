@@ -75,12 +75,34 @@ def valid_config_data():
         },
         "model_registry": {
             "claude": [
-                {"id": "claude-sonnet-4-5-20250929", "label": "Sonnet 4.5", "tier": "balanced", "default": True, "enabled": True},
-                {"id": "claude-opus-4-5-20251101", "label": "Opus 4.5", "tier": "premium", "enabled": True},
+                {
+                    "id": "claude-sonnet-4-5-20250929",
+                    "label": "Sonnet 4.5",
+                    "tier": "balanced",
+                    "default": True,
+                    "enabled": True,
+                },
+                {
+                    "id": "claude-opus-4-5-20251101",
+                    "label": "Opus 4.5",
+                    "tier": "premium",
+                    "enabled": True,
+                },
             ],
             "codex": [
-                {"id": "gpt-5.2-codex", "label": "GPT-5.2 Codex", "tier": "flagship", "default": True, "enabled": True},
-                {"id": "gpt-5.1-codex-mini", "label": "Mini", "tier": "speed", "enabled": False},
+                {
+                    "id": "gpt-5.2-codex",
+                    "label": "GPT-5.2 Codex",
+                    "tier": "flagship",
+                    "default": True,
+                    "enabled": True,
+                },
+                {
+                    "id": "gpt-5.1-codex-mini",
+                    "label": "Mini",
+                    "tier": "speed",
+                    "enabled": False,
+                },
             ],
         },
         "storage": {
@@ -265,7 +287,9 @@ class TestEstimateTokenUsage:
         estimate_4 = estimate_token_usage("Q", None, rounds=4, participant_count=2)
 
         # More rounds = more tokens
-        assert estimate_4["total_estimated_tokens"] > estimate_2["total_estimated_tokens"]
+        assert (
+            estimate_4["total_estimated_tokens"] > estimate_2["total_estimated_tokens"]
+        )
 
     def test_estimate_scales_with_participants(self):
         """Test estimate scales with number of participants."""
@@ -273,12 +297,16 @@ class TestEstimateTokenUsage:
         estimate_4 = estimate_token_usage("Q", None, rounds=2, participant_count=4)
 
         # More participants = more tokens
-        assert estimate_4["total_estimated_tokens"] > estimate_2["total_estimated_tokens"]
+        assert (
+            estimate_4["total_estimated_tokens"] > estimate_2["total_estimated_tokens"]
+        )
 
     def test_estimate_includes_context(self):
         """Test estimate includes context tokens."""
         estimate_no_ctx = estimate_token_usage("Q", None, rounds=2, participant_count=2)
-        estimate_with_ctx = estimate_token_usage("Q", "A" * 1000, rounds=2, participant_count=2)
+        estimate_with_ctx = estimate_token_usage(
+            "Q", "A" * 1000, rounds=2, participant_count=2
+        )
 
         assert estimate_with_ctx["context_tokens"] > 0
         assert estimate_no_ctx["context_tokens"] == 0
@@ -440,9 +468,12 @@ class TestDryRunCommand:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Should we use TypeScript?",
-                "--participants", "claude,codex",
-                "--config", str(temp_config_file),
+                "--question",
+                "Should we use TypeScript?",
+                "--participants",
+                "claude,codex",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
@@ -458,10 +489,14 @@ class TestDryRunCommand:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test question",
-                "--participants", "claude,codex",
-                "--format", "json",
-                "--config", str(temp_config_file),
+                "--question",
+                "Test question",
+                "--participants",
+                "claude,codex",
+                "--format",
+                "json",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
@@ -477,9 +512,12 @@ class TestDryRunCommand:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test question",
-                "--participants", "claude,codex",
-                "--config", str(temp_config_file),
+                "--question",
+                "Test question",
+                "--participants",
+                "claude,codex",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
@@ -493,10 +531,14 @@ class TestDryRunCommand:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test question",
-                "--participants", "claude,codex",
-                "--context", "Some additional context",
-                "--config", str(temp_config_file),
+                "--question",
+                "Test question",
+                "--participants",
+                "claude,codex",
+                "--context",
+                "Some additional context",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
@@ -508,11 +550,16 @@ class TestDryRunCommand:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test",
-                "--participants", "claude,codex",
-                "--rounds", "3",
-                "--format", "json",
-                "--config", str(temp_config_file),
+                "--question",
+                "Test",
+                "--participants",
+                "claude,codex",
+                "--rounds",
+                "3",
+                "--format",
+                "json",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
@@ -525,23 +572,32 @@ class TestDryRunCommand:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test",
-                "--participants", "nonexistent_adapter",
-                "--config", str(temp_config_file),
+                "--question",
+                "Test",
+                "--participants",
+                "nonexistent_adapter",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
         assert result.exit_code == 1
-        assert "error" in result.output.lower() or "not configured" in result.output.lower()
+        assert (
+            "error" in result.output.lower()
+            or "not configured" in result.output.lower()
+        )
 
     def test_dry_run_requires_two_participants(self, cli_runner, temp_config_file):
         """Test dry-run requires at least 2 participants."""
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test",
-                "--participants", "claude",
-                "--config", str(temp_config_file),
+                "--question",
+                "Test",
+                "--participants",
+                "claude",
+                "--config",
+                str(temp_config_file),
             ],
         )
 
@@ -660,7 +716,11 @@ class TestListModelsCommand:
                     {"id": "free-fast-model", "tier": "free-fast", "enabled": True},
                 ],
             },
-            "storage": {"transcripts_dir": "t", "format": "markdown", "auto_export": True},
+            "storage": {
+                "transcripts_dir": "t",
+                "format": "markdown",
+                "auto_export": True,
+            },
             "deliberation": {
                 "convergence_detection": {
                     "enabled": True,
@@ -671,7 +731,11 @@ class TestListModelsCommand:
                     "stance_stability_threshold": 0.80,
                     "response_length_drop_threshold": 0.40,
                 },
-                "early_stopping": {"enabled": True, "threshold": 0.66, "respect_min_rounds": True},
+                "early_stopping": {
+                    "enabled": True,
+                    "threshold": 0.66,
+                    "respect_min_rounds": True,
+                },
                 "convergence_threshold": 0.8,
                 "enable_convergence_detection": True,
             },
@@ -770,8 +834,10 @@ class TestIntegrationWithProjectConfig:
         result = cli_runner.invoke(
             dry_run,
             [
-                "--question", "Test question for dry run",
-                "--participants", "claude,codex",
+                "--question",
+                "Test question for dry run",
+                "--participants",
+                "claude,codex",
             ],
         )
 

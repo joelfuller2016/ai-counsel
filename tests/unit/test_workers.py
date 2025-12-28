@@ -677,14 +677,14 @@ class TestBackgroundWorkerPerformance:
                 ),
                 transcript_path="/tmp/test.md",
             )
-    
+
             # Store deliberation (which would trigger background processing)
             import time
-    
+
             start = time.perf_counter()
             decision_id = integration.store_deliberation("Test question?", result)
             elapsed_ms = (time.perf_counter() - start) * 1000
-    
+
             # Should return quickly (<100ms) without waiting for similarity computation
             assert elapsed_ms < 100, f"Store took {elapsed_ms:.2f}ms, should be <100ms"
             assert decision_id is not None

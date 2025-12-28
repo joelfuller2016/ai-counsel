@@ -156,9 +156,7 @@ class TestErrorNormalizer:
     def test_normalize_runtime_error_with_rate_limit(self):
         """Test normalizing RuntimeError with rate limit message."""
         error = RuntimeError("429 rate limit exceeded")
-        result = self.normalizer.normalize(
-            error, provider="openrouter", model="gpt-4"
-        )
+        result = self.normalizer.normalize(error, provider="openrouter", model="gpt-4")
 
         assert isinstance(result, RateLimitError)
         assert result.details.provider == "openrouter"
@@ -317,9 +315,7 @@ class TestHTTPErrorNormalization:
 
     def test_normalize_http_429(self):
         """Test normalizing HTTP 429 Rate Limited."""
-        error = self._create_http_error(
-            429, headers={"retry-after": "30"}
-        )
+        error = self._create_http_error(429, headers={"retry-after": "30"})
         result = self.normalizer.normalize(error, provider="openrouter")
 
         assert isinstance(result, RateLimitError)
@@ -357,9 +353,7 @@ class TestHTTPErrorNormalization:
 
     def test_normalize_http_extracts_request_id(self):
         """Test that request ID is extracted from headers."""
-        error = self._create_http_error(
-            500, headers={"x-request-id": "req-12345"}
-        )
+        error = self._create_http_error(500, headers={"x-request-id": "req-12345"})
         result = self.normalizer.normalize(error, provider="openrouter")
 
         assert result.details.request_id == "req-12345"
@@ -432,7 +426,9 @@ class TestConvenienceFunctions:
         ]
 
         for error in retryable_errors:
-            assert is_retryable_error(error), f"{type(error).__name__} should be retryable"
+            assert is_retryable_error(
+                error
+            ), f"{type(error).__name__} should be retryable"
 
     def test_is_retryable_error_false(self):
         """Test is_retryable_error returns False for non-retryable errors."""
@@ -445,7 +441,9 @@ class TestConvenienceFunctions:
         ]
 
         for error in non_retryable_errors:
-            assert not is_retryable_error(error), f"{type(error).__name__} should not be retryable"
+            assert not is_retryable_error(
+                error
+            ), f"{type(error).__name__} should not be retryable"
 
 
 class TestProviderSpecificNormalization:

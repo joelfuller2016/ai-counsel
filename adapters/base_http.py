@@ -1,4 +1,5 @@
 """Base HTTP adapter with request/retry management."""
+
 import asyncio
 import json
 import logging
@@ -10,8 +11,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 import httpx
-from tenacity import (retry, retry_if_exception, stop_after_attempt,
-                      wait_exponential)
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 # Configure progress logger for HTTP adapter debugging
 progress_logger = logging.getLogger("ai_counsel.progress")
@@ -19,12 +19,10 @@ if not progress_logger.handlers:
     # Log to both console and dedicated progress file
     project_dir = Path(__file__).parent.parent
     progress_file = project_dir / "deliberation_progress.log"
-    progress_handler = logging.FileHandler(
-        progress_file, mode="a", encoding="utf-8"
+    progress_handler = logging.FileHandler(progress_file, mode="a", encoding="utf-8")
+    progress_handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
     )
-    progress_handler.setFormatter(logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s"
-    ))
     progress_logger.addHandler(progress_handler)
     progress_logger.setLevel(logging.DEBUG)
 
@@ -102,9 +100,9 @@ class BaseHTTPAdapter(ABC):
     # Default prompt length limits per HTTP adapter type (in characters)
     # These are conservative limits to prevent API rejection errors
     DEFAULT_PROMPT_LIMITS: dict[str, int] = {
-        "ollama": 50_000,      # Local models typically have smaller context
-        "lmstudio": 50_000,    # Local models typically have smaller context
-        "openrouter": 100_000, # OpenRouter supports various models
+        "ollama": 50_000,  # Local models typically have smaller context
+        "lmstudio": 50_000,  # Local models typically have smaller context
+        "openrouter": 100_000,  # OpenRouter supports various models
     }
 
     # Adapter name for logging and limit lookup (subclasses should override)
@@ -314,7 +312,9 @@ class BaseHTTPAdapter(ABC):
             RuntimeError: If retries exhausted
         """
         # Use model-specific timeout if provided, otherwise use adapter default
-        effective_timeout = timeout_override if timeout_override is not None else self.timeout
+        effective_timeout = (
+            timeout_override if timeout_override is not None else self.timeout
+        )
         # Build full prompt
         full_prompt = prompt
         if context:
@@ -356,18 +356,26 @@ class BaseHTTPAdapter(ABC):
                 url=full_url, headers=headers, body=body, timeout=effective_timeout
             )
             elapsed = (datetime.now() - start_time).total_seconds()
-            progress_logger.info(f"[SUCCESS] HTTP REQUEST | Model: {model} | Time: {elapsed:.2f}s")
-            progress_logger.debug(f"   Response keys: {list(response_json.keys()) if isinstance(response_json, dict) else 'N/A'}")
+            progress_logger.info(
+                f"[SUCCESS] HTTP REQUEST | Model: {model} | Time: {elapsed:.2f}s"
+            )
+            progress_logger.debug(
+                f"   Response keys: {list(response_json.keys()) if isinstance(response_json, dict) else 'N/A'}"
+            )
             return self.parse_response(response_json)
 
         except asyncio.TimeoutError:
             elapsed = (datetime.now() - start_time).total_seconds()
-            progress_logger.error(f"[TIMEOUT] HTTP REQUEST | Model: {model} | Time: {elapsed:.2f}s")
+            progress_logger.error(
+                f"[TIMEOUT] HTTP REQUEST | Model: {model} | Time: {elapsed:.2f}s"
+            )
             raise TimeoutError(f"HTTP request timed out after {effective_timeout}s")
 
         except Exception as e:
             elapsed = (datetime.now() - start_time).total_seconds()
-            progress_logger.error(f"[ERROR] HTTP REQUEST FAILED | Model: {model} | Time: {elapsed:.2f}s | Error: {type(e).__name__}: {str(e)[:200]}")
+            progress_logger.error(
+                f"[ERROR] HTTP REQUEST FAILED | Model: {model} | Time: {elapsed:.2f}s | Error: {type(e).__name__}: {str(e)[:200]}"
+            )
             raise
 
     async def invoke_with_fallback(
@@ -436,7 +444,13 @@ class BaseHTTPAdapter(ABC):
 
                 return result
 
-            except (TimeoutError, httpx.HTTPStatusError, httpx.NetworkError, httpx.ConnectError, httpx.TimeoutException) as e:
+            except (
+                TimeoutError,
+                httpx.HTTPStatusError,
+                httpx.NetworkError,
+                httpx.ConnectError,
+                httpx.TimeoutException,
+            ) as e:
                 last_error = e
 
                 # Log the failure
@@ -474,7 +488,11 @@ class BaseHTTPAdapter(ABC):
         raise RuntimeError("No models to try")
 
     async def _execute_request_with_retry(
-        self, url: str, headers: dict[str, str], body: dict, timeout: Optional[int] = None
+        self,
+        url: str,
+        headers: dict[str, str],
+        body: dict,
+        timeout: Optional[int] = None,
     ) -> dict:
         """
         Execute HTTP POST request with retry logic.

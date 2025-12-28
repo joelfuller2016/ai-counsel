@@ -1,4 +1,5 @@
 """OpenRouter HTTP adapter with rate limit handling."""
+
 import asyncio
 import logging
 import random
@@ -328,9 +329,7 @@ class OpenRouterAdapter(BaseHTTPAdapter):
                             # Calculate delay and retry
                             delay = self._calculate_backoff_delay(attempt, retry_after)
                             retry_after_info = (
-                                f" (Retry-After: {retry_after}s)"
-                                if retry_after
-                                else ""
+                                f" (Retry-After: {retry_after}s)" if retry_after else ""
                             )
                             logger.warning(
                                 f"Rate limited (429){retry_after_info}. "

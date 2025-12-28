@@ -4,6 +4,7 @@ Provides intelligent summarization of previous rounds when context exceeds
 configurable thresholds, preventing token limit issues while preserving
 key points and voting history.
 """
+
 import logging
 import re
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ class CompressionResult:
         key_points_preserved: Number of key points preserved
         voting_history_preserved: Whether voting history was preserved
     """
+
     compressed_context: str
     original_token_estimate: int
     compressed_token_estimate: int
@@ -37,6 +39,7 @@ class CompressionResult:
 @dataclass
 class VoteSnapshot:
     """Snapshot of a vote for history preservation."""
+
     round: int
     participant: str
     option: str
@@ -47,6 +50,7 @@ class VoteSnapshot:
 @dataclass
 class RoundSummary:
     """Summary of a single round for compression."""
+
     round_number: int
     key_points: List[str] = field(default_factory=list)
     votes: List[VoteSnapshot] = field(default_factory=list)
@@ -191,7 +195,9 @@ class ContextCompressor:
 
         return key_points
 
-    def _extract_vote(self, response_text: str, participant: str, round_num: int) -> Optional[VoteSnapshot]:
+    def _extract_vote(
+        self, response_text: str, participant: str, round_num: int
+    ) -> Optional[VoteSnapshot]:
         """
         Extract vote information from response.
 
@@ -219,7 +225,7 @@ class ContextCompressor:
             # Extract rationale, truncating if needed
             rationale = vote_data.get("rationale", "")
             if len(rationale) > self.max_rationale_length:
-                rationale = rationale[:self.max_rationale_length] + "..."
+                rationale = rationale[: self.max_rationale_length] + "..."
 
             return VoteSnapshot(
                 round=round_num,
@@ -259,9 +265,7 @@ class ContextCompressor:
 
             # Extract vote
             vote = self._extract_vote(
-                response.response,
-                response.participant,
-                round_num
+                response.response, response.participant, round_num
             )
             if vote:
                 summary.votes.append(vote)
@@ -275,6 +279,7 @@ class ContextCompressor:
             else:
                 # Count votes per option
                 from collections import Counter
+
                 vote_counts = Counter(vote_options)
                 most_common = vote_counts.most_common(1)[0]
                 summary.consensus_trend = (
@@ -302,7 +307,7 @@ class ContextCompressor:
         # Add key points
         if summary.key_points:
             lines.append("**Key Points:**")
-            for point in summary.key_points[:self.max_key_points_per_round]:
+            for point in summary.key_points[: self.max_key_points_per_round]:
                 lines.append(f"- {point}")
 
         # Add voting snapshot
@@ -375,8 +380,8 @@ class ContextCompressor:
             )
 
         # Split into rounds to summarize and rounds to keep
-        rounds_to_summarize = sorted_round_nums[:-self.recent_rounds_to_keep]
-        rounds_to_keep = sorted_round_nums[-self.recent_rounds_to_keep:]
+        rounds_to_summarize = sorted_round_nums[: -self.recent_rounds_to_keep]
+        rounds_to_keep = sorted_round_nums[-self.recent_rounds_to_keep :]
 
         context_parts = []
         total_key_points = 0

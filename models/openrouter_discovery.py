@@ -8,6 +8,7 @@ This module provides functionality to:
 
 API Reference: https://openrouter.ai/api/v1/models
 """
+
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -84,7 +85,11 @@ class OpenRouterModelInfo:
 
         # Parse architecture
         architecture = data.get("architecture", {})
-        modality = architecture.get("modality", "text->text") if isinstance(architecture, dict) else "text->text"
+        modality = (
+            architecture.get("modality", "text->text")
+            if isinstance(architecture, dict)
+            else "text->text"
+        )
 
         # Parse top provider info
         top_provider = data.get("top_provider", {})
@@ -103,7 +108,11 @@ class OpenRouterModelInfo:
             pricing_completion=pricing_completion,
             top_provider=top_provider_str,
             is_free=is_free,
-            architecture=architecture.get("tokenizer") if isinstance(architecture, dict) else None,
+            architecture=(
+                architecture.get("tokenizer")
+                if isinstance(architecture, dict)
+                else None
+            ),
             modality=modality,
             supported_parameters=data.get("supported_parameters", []),
         )
@@ -277,11 +286,20 @@ class OpenRouterModelDiscovery:
             name_lower = model.name.lower()
 
             # Categorize based on model characteristics
-            if any(kw in model_id_lower or kw in name_lower for kw in ["deepseek-r1", "qwq", "reasoning"]):
+            if any(
+                kw in model_id_lower or kw in name_lower
+                for kw in ["deepseek-r1", "qwq", "reasoning"]
+            ):
                 categories["free-reasoning"].append(model)
-            elif any(kw in model_id_lower or kw in name_lower for kw in ["code", "coder", "devstral", "starcoder"]):
+            elif any(
+                kw in model_id_lower or kw in name_lower
+                for kw in ["code", "coder", "devstral", "starcoder"]
+            ):
                 categories["free-coding"].append(model)
-            elif any(kw in model_id_lower or kw in name_lower for kw in ["flash", "mini", "scout", "small"]):
+            elif any(
+                kw in model_id_lower or kw in name_lower
+                for kw in ["flash", "mini", "scout", "small"]
+            ):
                 categories["free-fast"].append(model)
             elif "multimodal" in model.modality or "image" in model.modality:
                 categories["free-multimodal"].append(model)
@@ -307,15 +325,23 @@ class OpenRouterModelDiscovery:
         name_lower = model.name.lower()
 
         # Reasoning models need longer timeouts
-        if any(kw in model_id_lower or kw in name_lower for kw in ["deepseek-r1", "qwq", "reasoning"]):
+        if any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["deepseek-r1", "qwq", "reasoning"]
+        ):
             return 120
 
         # Large models (70B+) need more time
-        if any(kw in model_id_lower or kw in name_lower for kw in ["70b", "72b", "65b"]):
+        if any(
+            kw in model_id_lower or kw in name_lower for kw in ["70b", "72b", "65b"]
+        ):
             return 60
 
         # Flash/mini models are fast
-        if any(kw in model_id_lower or kw in name_lower for kw in ["flash", "mini", "scout", "small"]):
+        if any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["flash", "mini", "scout", "small"]
+        ):
             return 30
 
         # Default timeout

@@ -205,9 +205,7 @@ class TestRateLimitingExceptions:
 
     def test_rate_limit_error(self):
         """Test RateLimitError."""
-        error = RateLimitError(
-            details=ErrorDetails(retry_after=30)
-        )
+        error = RateLimitError(details=ErrorDetails(retry_after=30))
         assert error.error_code == ErrorCode.RATE_LIMITED
         assert error.details.retry_after == 30
 
@@ -418,8 +416,12 @@ class TestExceptionHierarchy:
         ]
         for cls in exception_classes:
             error = cls()
-            assert isinstance(error, AICouncilError), f"{cls.__name__} should inherit from AICouncilError"
-            assert isinstance(error, Exception), f"{cls.__name__} should inherit from Exception"
+            assert isinstance(
+                error, AICouncilError
+            ), f"{cls.__name__} should inherit from AICouncilError"
+            assert isinstance(
+                error, Exception
+            ), f"{cls.__name__} should inherit from Exception"
 
     def test_exception_can_be_caught_by_category(self):
         """Test that exceptions can be caught by category."""

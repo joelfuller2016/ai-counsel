@@ -1,11 +1,12 @@
 """Unit tests for new voting features (Issues #27, #28, #33)."""
+
 import pytest
 from datetime import datetime
 
 from models.schema import (
-    Vote, 
-    RoundVote, 
-    VotingResult, 
+    Vote,
+    RoundVote,
+    VotingResult,
     VoteChange,
     RoundResponse,
 )

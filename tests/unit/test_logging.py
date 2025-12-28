@@ -231,6 +231,7 @@ class TestJSONFormatter:
 
     def test_non_serializable_extra_converted(self):
         """Test that non-serializable extra values are converted to strings."""
+
         class CustomObject:
             def __str__(self):
                 return "custom_object_str"

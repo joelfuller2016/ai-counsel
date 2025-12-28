@@ -1,4 +1,5 @@
 """Convergence detection for deliberation rounds."""
+
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -393,10 +394,7 @@ class ConvergenceDetector:
 
         # Check for impasse (stable disagreement)
         impasse_rounds = max(2, self.config.consecutive_stable_rounds)
-        if (
-            status == "diverging"
-            and self.consecutive_divergent_count >= impasse_rounds
-        ):
+        if status == "diverging" and self.consecutive_divergent_count >= impasse_rounds:
             status = "impasse"
 
         return ConvergenceResult(

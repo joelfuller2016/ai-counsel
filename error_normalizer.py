@@ -429,10 +429,9 @@ class ErrorNormalizer:
                 pass
 
         # Check for request ID in headers
-        request_id = (
-            error.response.headers.get("x-request-id")
-            or error.response.headers.get("x-trace-id")
-        )
+        request_id = error.response.headers.get(
+            "x-request-id"
+        ) or error.response.headers.get("x-trace-id")
         if request_id:
             details.request_id = request_id
 

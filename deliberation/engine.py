@@ -1,4 +1,5 @@
 """Deliberation engine for orchestrating multi-model discussions."""
+
 import asyncio
 import json
 import logging
@@ -136,17 +137,16 @@ class CostTracker:
             cost_breakdown={k: round(v, 6) for k, v in self.cost_breakdown.items()},
         )
 
+
 # Configure progress logger for deliberation tracking
 progress_logger = logging.getLogger("ai_counsel.progress")
 if not progress_logger.handlers:
     project_dir = Path(__file__).parent.parent
     progress_file = project_dir / "deliberation_progress.log"
-    progress_handler = logging.FileHandler(
-        progress_file, mode="a", encoding="utf-8"
+    progress_handler = logging.FileHandler(progress_file, mode="a", encoding="utf-8")
+    progress_handler.setFormatter(
+        logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
     )
-    progress_handler.setFormatter(logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s"
-    ))
     progress_logger.addHandler(progress_handler)
     progress_logger.setLevel(logging.DEBUG)
 
@@ -155,7 +155,12 @@ if TYPE_CHECKING:
     from deliberation.transcript import TranscriptManager
     from deliberation.tools import ToolExecutor
     from models.model_registry import ModelRegistry
-    from models.schema import DeliberateRequest, DeliberationResult, Summary, VotingResult
+    from models.schema import (
+        DeliberateRequest,
+        DeliberationResult,
+        Summary,
+        VotingResult,
+    )
 
 
 class DeliberationEngine:
@@ -265,8 +270,7 @@ class DeliberationEngine:
                     logger.info(f"Decision graph memory enabled (db: {db_path})")
                 except Exception as e:
                     logger.warning(
-                        f"Failed to initialize decision graph: {e}",
-                        exc_info=True
+                        f"Failed to initialize decision graph: {e}", exc_info=True
                     )
                     logger.warning(
                         "Continuing without decision graph memory. "
@@ -294,19 +298,31 @@ class DeliberationEngine:
             self.tool_executor = ToolExecutor()
             # Get security config from deliberation config (handle None config gracefully)
             security_config = None
-            if config and hasattr(config, "deliberation") and hasattr(config.deliberation, "tool_security"):
+            if (
+                config
+                and hasattr(config, "deliberation")
+                and hasattr(config.deliberation, "tool_security")
+            ):
                 security_config = config.deliberation.tool_security
             # Register all available tools with security config
-            self.tool_executor.register_tool(ReadFileTool(security_config=security_config))
-            self.tool_executor.register_tool(SearchCodeTool(security_config=security_config))
-            self.tool_executor.register_tool(ListFilesTool(security_config=security_config))
+            self.tool_executor.register_tool(
+                ReadFileTool(security_config=security_config)
+            )
+            self.tool_executor.register_tool(
+                SearchCodeTool(security_config=security_config)
+            )
+            self.tool_executor.register_tool(
+                ListFilesTool(security_config=security_config)
+            )
             self.tool_executor.register_tool(RunCommandTool())
             self.tool_executor.register_tool(GetFileTreeTool())
             logger.info(
                 "Tool executor initialized with 5 tools (read_file, search_code, list_files, run_command, get_file_tree)"
             )
             if security_config and security_config.exclude_patterns:
-                logger.info(f"Tool security enabled with {len(security_config.exclude_patterns)} exclusion patterns")
+                logger.info(
+                    f"Tool security enabled with {len(security_config.exclude_patterns)} exclusion patterns"
+                )
         except Exception as e:
             logger.warning(
                 f"Failed to initialize tool executor: {e}. Tool execution will be disabled."
@@ -405,7 +421,9 @@ The following files are available in the working directory:
 
         # ========== PARALLEL MODEL INVOCATION ==========
         # Run all participant adapters concurrently for ~3x speedup
-        async def invoke_participant(participant: Participant) -> tuple[Participant, str]:
+        async def invoke_participant(
+            participant: Participant,
+        ) -> tuple[Participant, str]:
             """Invoke a single participant's adapter and return the response."""
             adapter = self.adapters[participant.cli]
 
@@ -416,7 +434,11 @@ The following files are available in the working directory:
                     participant.cli, participant.model
                 )
 
-            reasoning_info = f", reasoning_effort={participant.reasoning_effort}" if participant.reasoning_effort else ""
+            reasoning_info = (
+                f", reasoning_effort={participant.reasoning_effort}"
+                if participant.reasoning_effort
+                else ""
+            )
             timeout_info = f", timeout={model_timeout}s" if model_timeout else ""
             logger.info(
                 f"Round {round_num}: Invoking {participant.model}@{participant.cli} "
@@ -496,10 +518,11 @@ The following files are available in the working directory:
                 return (participant, f"[ERROR: {type(e).__name__}: {str(e)}]")
 
         # Run all participants in PARALLEL using asyncio.gather
-        logger.info(f"Round {round_num}: Invoking {len(participants)} participants in PARALLEL")
+        logger.info(
+            f"Round {round_num}: Invoking {len(participants)} participants in PARALLEL"
+        )
         parallel_results = await asyncio.gather(
-            *[invoke_participant(p) for p in participants],
-            return_exceptions=True
+            *[invoke_participant(p) for p in participants], return_exceptions=True
         )
 
         # Process results and handle any exceptions from gather
@@ -508,8 +531,12 @@ The following files are available in the working directory:
             if isinstance(result, Exception):
                 # Handle unexpected exceptions from gather itself
                 participant = participants[i]
-                logger.error(f"Unexpected error for {participant.model}@{participant.cli}: {result}")
-                participant_responses.append((participant, f"[ERROR: {type(result).__name__}: {str(result)}]"))
+                logger.error(
+                    f"Unexpected error for {participant.model}@{participant.cli}: {result}"
+                )
+                participant_responses.append(
+                    (participant, f"[ERROR: {type(result).__name__}: {str(result)}]")
+                )
             else:
                 participant_responses.append(result)
 
@@ -718,7 +745,9 @@ The following files are available in the working directory:
                 else:
                     context_parts.append(f"**Error:** {record.result.error}\n")
 
-    def _parse_vote(self, response_text: str, participant_id: str = "") -> tuple[Optional[Vote], str]:
+    def _parse_vote(
+        self, response_text: str, participant_id: str = ""
+    ) -> tuple[Optional[Vote], str]:
         """
         Parse vote from response text if present.
 
@@ -913,7 +942,9 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
         vote_history: dict[str, list[tuple[int, str, float, str]]] = {}
 
         for response in responses:
-            vote, failure_reason = self._parse_vote(response.response, response.participant)
+            vote, failure_reason = self._parse_vote(
+                response.response, response.participant
+            )
 
             # Track metrics for this response
             is_abstain = False
@@ -928,7 +959,9 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
             else:
                 # Failed to parse vote - create abstain if enabled
                 if include_abstains:
-                    vote = self._create_abstain_vote(response.participant, failure_reason)
+                    vote = self._create_abstain_vote(
+                        response.participant, failure_reason
+                    )
                     is_abstain = True
                     logger.info(
                         f"Created ABSTAIN vote for {response.participant} (reason: {failure_reason})"
@@ -959,18 +992,24 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
                 )
 
                 # Issue #28: Track model vote counts for abstain rate
-                model_vote_counts[response.participant] = model_vote_counts.get(response.participant, 0) + 1
+                model_vote_counts[response.participant] = (
+                    model_vote_counts.get(response.participant, 0) + 1
+                )
 
                 # Issue #28: Check if this is an ABSTAIN vote
                 if vote.option.upper() == "ABSTAIN":
                     abstain_count += 1
-                    model_abstain_counts[response.participant] = model_abstain_counts.get(response.participant, 0) + 1
+                    model_abstain_counts[response.participant] = (
+                        model_abstain_counts.get(response.participant, 0) + 1
+                    )
                 else:
                     # Only count non-abstain votes in tally (Issue #28)
                     raw_tally[vote.option] = raw_tally.get(vote.option, 0) + 1
 
                     # Issue #27: Confidence-weighted vote aggregation
-                    weighted_tally[vote.option] = weighted_tally.get(vote.option, 0.0) + vote.confidence
+                    weighted_tally[vote.option] = (
+                        weighted_tally.get(vote.option, 0.0) + vote.confidence
+                    )
 
                     if vote.option not in all_options:
                         all_options.append(vote.option)
@@ -989,14 +1028,18 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
         abstain_rate_by_model: dict[str, float] = {}
         for participant, total_votes in model_vote_counts.items():
             abstain_votes = model_abstain_counts.get(participant, 0)
-            abstain_rate_by_model[participant] = abstain_votes / total_votes if total_votes > 0 else 0.0
+            abstain_rate_by_model[participant] = (
+                abstain_votes / total_votes if total_votes > 0 else 0.0
+            )
 
         # Group semantically similar options using similarity backend
         # if available, otherwise use exact string matching
         tally = self._group_similar_vote_options(all_options, raw_tally)
 
         # Issue #27: Group weighted tally similarly
-        grouped_weighted_tally = self._group_similar_vote_options_weighted(all_options, weighted_tally)
+        grouped_weighted_tally = self._group_similar_vote_options_weighted(
+            all_options, weighted_tally
+        )
 
         # Determine consensus and winning option (excluding abstains - Issue #28)
         non_abstain_tally = {k: v for k, v in tally.items() if k.upper() != "ABSTAIN"}
@@ -1007,16 +1050,23 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
         elif len(non_abstain_tally) > 1:
             # Find option with most votes
             max_votes = max(non_abstain_tally.values())
-            winners = [opt for opt, count in non_abstain_tally.items() if count == max_votes]
+            winners = [
+                opt for opt, count in non_abstain_tally.items() if count == max_votes
+            ]
             if len(winners) == 1:
                 # Clear winner
                 consensus_reached = True
                 winning_option = winners[0]
             else:
                 # Tie - use weighted tally as tiebreaker (Issue #27)
-                winner_weights = [(opt, grouped_weighted_tally.get(opt, 0.0)) for opt in winners]
+                winner_weights = [
+                    (opt, grouped_weighted_tally.get(opt, 0.0)) for opt in winners
+                ]
                 winner_weights.sort(key=lambda x: x[1], reverse=True)
-                if len(winner_weights) >= 2 and winner_weights[0][1] > winner_weights[1][1]:
+                if (
+                    len(winner_weights) >= 2
+                    and winner_weights[0][1] > winner_weights[1][1]
+                ):
                     # Weighted tally breaks the tie
                     consensus_reached = True
                     winning_option = winner_weights[0][0]
@@ -1149,7 +1199,9 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
             # Compare consecutive rounds
             for i in range(1, len(history_sorted)):
                 prev_round, prev_option, prev_confidence, _ = history_sorted[i - 1]
-                curr_round, curr_option, curr_confidence, curr_rationale = history_sorted[i]
+                curr_round, curr_option, curr_confidence, curr_rationale = (
+                    history_sorted[i]
+                )
 
                 # Detect if option changed (case-insensitive comparison)
                 if prev_option.upper() != curr_option.upper():
@@ -1252,7 +1304,9 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
             # Merge weighted tally by groups
             grouped_tally = {}
             for canonical_option, similar_options in groups:
-                total_weight = sum(weighted_tally.get(opt, 0.0) for opt in similar_options)
+                total_weight = sum(
+                    weighted_tally.get(opt, 0.0) for opt in similar_options
+                )
                 grouped_tally[canonical_option] = total_weight
 
             return grouped_tally
@@ -1337,7 +1391,9 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
 
         voting_instructions = self._build_voting_instructions()
         enhanced_prompt_final = f"{deliberation_instructions}{tool_instructions}\n\n## Question\n{prompt}\n\n{voting_instructions}"
-        logger.debug(f"Enhanced prompt total length: {len(enhanced_prompt_final)} chars")
+        logger.debug(
+            f"Enhanced prompt total length: {len(enhanced_prompt_final)} chars"
+        )
         return enhanced_prompt_final
 
     def _check_early_stopping(
@@ -1467,7 +1523,9 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
                 )
                 return Summary(
                     consensus="[Auto-generated fallback summary] Summary generation failed completely.",
-                    key_agreements=["Unable to generate summary - review full debate below"],
+                    key_agreements=[
+                        "Unable to generate summary - review full debate below"
+                    ],
                     key_disagreements=[],
                     final_recommendation="Please review the full debate transcript for details.",
                 )
@@ -1523,9 +1581,15 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
         # Log deliberation start with all participating models
         model_list = [f"{p.model}@{p.cli}" for p in request.participants]
         progress_logger.info("=" * 70)
-        progress_logger.info(f"🎯 DELIBERATION START | Mode: {request.mode} | Rounds: {request.rounds}")
-        progress_logger.info(f"   Question: {request.question[:100]}{'...' if len(request.question) > 100 else ''}")
-        progress_logger.info(f"   Models ({len(request.participants)}): {', '.join(model_list)}")
+        progress_logger.info(
+            f"🎯 DELIBERATION START | Mode: {request.mode} | Rounds: {request.rounds}"
+        )
+        progress_logger.info(
+            f"   Question: {request.question[:100]}{'...' if len(request.question) > 100 else ''}"
+        )
+        progress_logger.info(
+            f"   Models ({len(request.participants)}): {', '.join(model_list)}"
+        )
         progress_logger.info(f"   Working Dir: {request.working_directory}")
         progress_logger.info("-" * 70)
 
@@ -1562,7 +1626,13 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
 
             try:
                 # Execute round with timeout protection (5 min per round max)
-                round_timeout = self.config.defaults.timeout_per_round if self.config and hasattr(self.config, 'defaults') and hasattr(self.config.defaults, 'timeout_per_round') else 300
+                round_timeout = (
+                    self.config.defaults.timeout_per_round
+                    if self.config
+                    and hasattr(self.config, "defaults")
+                    and hasattr(self.config.defaults, "timeout_per_round")
+                    else 300
+                )
                 round_responses = await asyncio.wait_for(
                     self.execute_round(
                         round_num=round_num,
@@ -1572,11 +1642,15 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
                         graph_context=graph_context,
                         working_directory=request.working_directory,
                     ),
-                    timeout=round_timeout
+                    timeout=round_timeout,
                 )
             except asyncio.TimeoutError:
-                progress_logger.error(f"   ⏱️ ROUND {round_num} TIMED OUT after {round_timeout}s")
-                issues_encountered.append(f"Round {round_num}: Timed out after {round_timeout}s")
+                progress_logger.error(
+                    f"   ⏱️ ROUND {round_num} TIMED OUT after {round_timeout}s"
+                )
+                issues_encountered.append(
+                    f"Round {round_num}: Timed out after {round_timeout}s"
+                )
                 # Create error responses for all participants
                 round_responses = [
                     RoundResponse(
@@ -1588,12 +1662,18 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
                     for p in request.participants
                 ]
             except asyncio.CancelledError:
-                progress_logger.warning(f"   ⚠️ ROUND {round_num} CANCELLED - request interrupted")
+                progress_logger.warning(
+                    f"   ⚠️ ROUND {round_num} CANCELLED - request interrupted"
+                )
                 issues_encountered.append(f"Round {round_num}: Cancelled by client")
                 raise  # Re-raise to propagate cancellation
             except Exception as e:
-                progress_logger.error(f"   💥 ROUND {round_num} FAILED: {type(e).__name__}: {str(e)[:100]}")
-                issues_encountered.append(f"Round {round_num}: {type(e).__name__}: {str(e)[:50]}")
+                progress_logger.error(
+                    f"   💥 ROUND {round_num} FAILED: {type(e).__name__}: {str(e)[:100]}"
+                )
+                issues_encountered.append(
+                    f"Round {round_num}: {type(e).__name__}: {str(e)[:50]}"
+                )
                 # Create error responses for all participants
                 round_responses = [
                     RoundResponse(
@@ -1626,16 +1706,24 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
 
             # Log round completion with model results
             round_elapsed = (datetime.now() - round_start).total_seconds()
-            successful = [r for r in round_responses if not r.response.startswith("[ERROR")]
+            successful = [
+                r for r in round_responses if not r.response.startswith("[ERROR")
+            ]
             failed = [r for r in round_responses if r.response.startswith("[ERROR")]
 
-            progress_logger.info(f"📍 ROUND {round_num} COMPLETE | Time: {round_elapsed:.1f}s | Success: {len(successful)}/{len(round_responses)}")
+            progress_logger.info(
+                f"📍 ROUND {round_num} COMPLETE | Time: {round_elapsed:.1f}s | Success: {len(successful)}/{len(round_responses)}"
+            )
             for r in round_responses:
                 if r.response.startswith("[ERROR"):
                     progress_logger.error(f"   ❌ {r.participant}: {r.response[:100]}")
-                    issues_encountered.append(f"Round {round_num}: {r.participant} - {r.response[:50]}")
+                    issues_encountered.append(
+                        f"Round {round_num}: {r.participant} - {r.response[:50]}"
+                    )
                 else:
-                    progress_logger.info(f"   ✅ {r.participant}: {len(r.response)} chars")
+                    progress_logger.info(
+                        f"   ✅ {r.participant}: {len(r.response)} chars"
+                    )
 
             # Check for model-controlled early stopping
             # Use config minimum rounds, not request rounds, for respect_min_rounds
@@ -1814,12 +1902,14 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
             # since it comes from ConvergenceInfo.status or is set to "unknown"
             result.convergence_info = ConvergenceInfo(
                 detected=convergence_detected,
-                detection_round=actual_rounds_completed
-                if convergence_detected
-                else None,
-                final_similarity=final_convergence_info.min_similarity
-                if final_convergence_info
-                else 0.0,
+                detection_round=(
+                    actual_rounds_completed if convergence_detected else None
+                ),
+                final_similarity=(
+                    final_convergence_info.min_similarity
+                    if final_convergence_info
+                    else 0.0
+                ),
                 status=cast(
                     Literal[
                         "converged",
@@ -1835,9 +1925,11 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
                     convergence_status,
                 ),
                 scores_by_round=[],  # Could track all rounds if needed
-                per_participant_similarity=final_convergence_info.per_participant_similarity
-                if final_convergence_info
-                else {},
+                per_participant_similarity=(
+                    final_convergence_info.per_participant_similarity
+                    if final_convergence_info
+                    else {}
+                ),
             )
 
         # Save transcript
@@ -1858,10 +1950,14 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
         # Log deliberation completion summary
         total_elapsed = (datetime.now() - deliberation_start).total_seconds()
         progress_logger.info("-" * 70)
-        progress_logger.info(f"🏁 DELIBERATION COMPLETE | Time: {total_elapsed:.1f}s | Rounds: {actual_rounds_completed}/{rounds_to_execute}")
+        progress_logger.info(
+            f"🏁 DELIBERATION COMPLETE | Time: {total_elapsed:.1f}s | Rounds: {actual_rounds_completed}/{rounds_to_execute}"
+        )
         progress_logger.info(f"   Status: {result.status}")
         if result.convergence_info:
-            progress_logger.info(f"   Convergence: {result.convergence_info.status} (similarity: {result.convergence_info.final_similarity:.2f})")
+            progress_logger.info(
+                f"   Convergence: {result.convergence_info.status} (similarity: {result.convergence_info.final_similarity:.2f})"
+            )
         if result.voting_result and result.voting_result.winning_option:
             progress_logger.info(f"   Winner: {result.voting_result.winning_option}")
         if issues_encountered:

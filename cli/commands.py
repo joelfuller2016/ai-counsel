@@ -79,7 +79,9 @@ class ConfigValidationResult:
         }
 
 
-def validate_yaml_syntax(config_path: Path) -> tuple[bool, Optional[str], Optional[dict]]:
+def validate_yaml_syntax(
+    config_path: Path,
+) -> tuple[bool, Optional[str], Optional[dict]]:
     """Validate YAML syntax.
 
     Returns:
@@ -97,7 +99,9 @@ def validate_yaml_syntax(config_path: Path) -> tuple[bool, Optional[str], Option
         return False, f"Error reading config: {e}", None
 
 
-def validate_config_schema(config_path: Path) -> tuple[bool, Optional[str], Optional[Config]]:
+def validate_config_schema(
+    config_path: Path,
+) -> tuple[bool, Optional[str], Optional[Config]]:
     """Validate config against Pydantic schema.
 
     Returns:
@@ -110,7 +114,9 @@ def validate_config_schema(config_path: Path) -> tuple[bool, Optional[str], Opti
         return False, f"Schema validation error: {e}", None
 
 
-def check_adapter_availability(adapter_name: str, config: CLIToolConfig | CLIAdapterConfig | HTTPAdapterConfig) -> tuple[bool, str]:
+def check_adapter_availability(
+    adapter_name: str, config: CLIToolConfig | CLIAdapterConfig | HTTPAdapterConfig
+) -> tuple[bool, str]:
     """Check if adapter command/service is available.
 
     Returns:
@@ -132,7 +138,9 @@ def check_adapter_availability(adapter_name: str, config: CLIToolConfig | CLIAda
     return False, "Unknown adapter type"
 
 
-def validate_model_registry(config: Config, registry: ModelRegistry) -> list[tuple[str, str, bool, str]]:
+def validate_model_registry(
+    config: Config, registry: ModelRegistry
+) -> list[tuple[str, str, bool, str]]:
     """Validate model registry entries.
 
     Returns:
@@ -153,26 +161,20 @@ def validate_model_registry(config: Config, registry: ModelRegistry) -> list[tup
 
         for model in models:
             if not adapter_configured:
-                results.append((
-                    adapter_name,
-                    model.id,
-                    False,
-                    f"Adapter '{adapter_name}' not configured in adapters or cli_tools section"
-                ))
+                results.append(
+                    (
+                        adapter_name,
+                        model.id,
+                        False,
+                        f"Adapter '{adapter_name}' not configured in adapters or cli_tools section",
+                    )
+                )
             elif not model.enabled:
-                results.append((
-                    adapter_name,
-                    model.id,
-                    True,
-                    "Model is disabled"
-                ))
+                results.append((adapter_name, model.id, True, "Model is disabled"))
             else:
-                results.append((
-                    adapter_name,
-                    model.id,
-                    True,
-                    "Model configured and enabled"
-                ))
+                results.append(
+                    (adapter_name, model.id, True, "Model configured and enabled")
+                )
 
     return results
 
@@ -246,12 +248,16 @@ def perform_full_validation(config_path: Path) -> ConfigValidationResult:
         else:
             enabled_count += 1
 
-    result.add_info(f"Models: {enabled_count} enabled, {disabled_count} disabled, {orphaned_count} orphaned")
+    result.add_info(
+        f"Models: {enabled_count} enabled, {disabled_count} disabled, {orphaned_count} orphaned"
+    )
 
     return result
 
 
-def estimate_token_usage(question: str, context: Optional[str], rounds: int, participant_count: int) -> dict:
+def estimate_token_usage(
+    question: str, context: Optional[str], rounds: int, participant_count: int
+) -> dict:
     """Estimate token usage for a deliberation.
 
     This is a rough estimation based on typical response sizes.
@@ -286,7 +292,13 @@ def estimate_token_usage(question: str, context: Optional[str], rounds: int, par
         "question_tokens": question_tokens,
         "context_tokens": context_tokens,
         "estimated_input_tokens_per_round": [
-            (system_prompt_tokens + question_tokens + context_tokens + context_growth_per_round * r) * participant_count
+            (
+                system_prompt_tokens
+                + question_tokens
+                + context_tokens
+                + context_growth_per_round * r
+            )
+            * participant_count
             for r in range(rounds)
         ],
         "estimated_output_tokens_per_round": output_tokens_per_round,
@@ -325,10 +337,12 @@ def parse_participants(participants_str: str, config: Config) -> list[dict]:
         if not model:
             model = registry.get_default(adapter)
 
-        participants.append({
-            "cli": adapter,
-            "model": model,
-        })
+        participants.append(
+            {
+                "cli": adapter,
+                "model": model,
+            }
+        )
 
     return participants
 
@@ -481,7 +495,9 @@ def dry_run(
         sys.exit(1)
 
     if len(parsed_participants) < 2:
-        click.echo(click.style("Error: At least 2 participants required", fg="red"), err=True)
+        click.echo(
+            click.style("Error: At least 2 participants required", fg="red"), err=True
+        )
         sys.exit(1)
 
     # Validate each participant
@@ -507,7 +523,10 @@ def dry_run(
         if model:
             validation = registry.validate_model(adapter, model)
             if not validation.valid:
-                validation_errors.append(validation.error_message or f"Invalid model '{model}' for adapter '{adapter}'")
+                validation_errors.append(
+                    validation.error_message
+                    or f"Invalid model '{model}' for adapter '{adapter}'"
+                )
 
     if validation_errors:
         for error in validation_errors:
@@ -567,9 +586,15 @@ def dry_run(
             click.echo(f"  - {p['cli']}: {p['model']} ({rounds} calls)")
 
         click.echo(click.style("\nToken Estimates:", bold=True))
-        click.echo(f"  Estimated input tokens: {token_estimate['total_estimated_input_tokens']:,}")
-        click.echo(f"  Estimated output tokens: {token_estimate['total_estimated_output_tokens']:,}")
-        click.echo(f"  Total estimated tokens: {token_estimate['total_estimated_tokens']:,}")
+        click.echo(
+            f"  Estimated input tokens: {token_estimate['total_estimated_input_tokens']:,}"
+        )
+        click.echo(
+            f"  Estimated output tokens: {token_estimate['total_estimated_output_tokens']:,}"
+        )
+        click.echo(
+            f"  Total estimated tokens: {token_estimate['total_estimated_tokens']:,}"
+        )
         click.echo(f"  Note: {token_estimate['note']}")
 
 
@@ -641,14 +666,16 @@ def list_models(
                 if not show_disabled and not model.enabled:
                     continue
 
-                adapter_models.append({
-                    "id": model.id,
-                    "label": model.label or model.id,
-                    "tier": model.tier or "general",
-                    "enabled": model.enabled,
-                    "default": model.default,
-                    "timeout": model.timeout,
-                })
+                adapter_models.append(
+                    {
+                        "id": model.id,
+                        "label": model.label or model.id,
+                        "tier": model.tier or "general",
+                        "enabled": model.enabled,
+                        "default": model.default,
+                        "timeout": model.timeout,
+                    }
+                )
 
             if adapter_models:
                 models_by_adapter[adapter_name] = adapter_models
@@ -709,7 +736,9 @@ def list_models(
                 cost = "free" if is_free else "paid"
                 default_marker = " (default)" if model["default"] else ""
 
-                click.echo(f"  - {model['id']}: {tier} ({cost}, {status}){default_marker}")
+                click.echo(
+                    f"  - {model['id']}: {tier} ({cost}, {status}){default_marker}"
+                )
 
 
 async def check_model_health(
@@ -804,12 +833,14 @@ async def check_all_http_models(
 
     for (adapter_name, model_id), result in zip(model_info, check_results):
         if isinstance(result, Exception):
-            results.append(HealthCheckResult(
-                available=False,
-                error=f"{type(result).__name__}: {str(result)}",
-                model=model_id,
-                adapter=adapter_name,
-            ))
+            results.append(
+                HealthCheckResult(
+                    available=False,
+                    error=f"{type(result).__name__}: {str(result)}",
+                    model=model_id,
+                    adapter=adapter_name,
+                )
+            )
         else:
             results.append(result)
 
@@ -896,7 +927,9 @@ def health_check(
 
     if not results:
         click.echo(click.style("No HTTP models found to check.", fg="yellow"))
-        click.echo("Health checks only apply to HTTP adapters (openrouter, ollama, lmstudio).")
+        click.echo(
+            "Health checks only apply to HTTP adapters (openrouter, ollama, lmstudio)."
+        )
         if adapter:
             click.echo(f"Adapter filter: {adapter}")
         sys.exit(0)
@@ -954,7 +987,11 @@ def health_check(
                 else:
                     status = click.style("unavailable", fg="red")
                     latency = "-"
-                    error = r.error[:30] + "..." if r.error and len(r.error) > 30 else (r.error or "")
+                    error = (
+                        r.error[:30] + "..."
+                        if r.error and len(r.error) > 30
+                        else (r.error or "")
+                    )
 
                 click.echo(f"{model_display:<50} {status:<21} {latency:<12} {error}")
 
@@ -963,9 +1000,17 @@ def health_check(
 
         # Summary
         if available_count == len(results):
-            click.echo(click.style(f"All {len(results)} models available", fg="green", bold=True))
+            click.echo(
+                click.style(
+                    f"All {len(results)} models available", fg="green", bold=True
+                )
+            )
         elif unavailable_count == len(results):
-            click.echo(click.style(f"All {len(results)} models unavailable", fg="red", bold=True))
+            click.echo(
+                click.style(
+                    f"All {len(results)} models unavailable", fg="red", bold=True
+                )
+            )
         else:
             click.echo(
                 f"Summary: "
@@ -979,17 +1024,19 @@ def health_check(
         for r in results:
             if r.available:
                 latency = f" ({r.latency_ms:.0f}ms)" if r.latency_ms else ""
-                click.echo(click.style(f"[OK] {r.adapter}/{r.model}{latency}", fg="green"))
+                click.echo(
+                    click.style(f"[OK] {r.adapter}/{r.model}{latency}", fg="green")
+                )
             else:
-                click.echo(click.style(f"[FAIL] {r.adapter}/{r.model}: {r.error}", fg="red"))
+                click.echo(
+                    click.style(f"[FAIL] {r.adapter}/{r.model}: {r.error}", fg="red")
+                )
 
         click.echo("")
         click.echo(f"Available: {available_count}/{len(results)}")
 
     # Exit with error if any models unavailable
     sys.exit(0 if unavailable_count == 0 else 1)
-
-
 
 
 async def update_free_models_async(
@@ -1011,12 +1058,12 @@ async def update_free_models_async(
     if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
-    with open(config_path, 'r', encoding='utf-8') as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         original_content = f.read()
         config_data = yaml.safe_load(original_content)
 
     # Get existing openrouter models
-    existing_openrouter = config_data.get('model_registry', {}).get('openrouter', [])
+    existing_openrouter = config_data.get("model_registry", {}).get("openrouter", [])
 
     # Fetch models from API
     discovery = OpenRouterModelDiscovery(api_key=api_key)
@@ -1024,9 +1071,9 @@ async def update_free_models_async(
 
     if result.error:
         return {
-            'success': False,
-            'error': result.error,
-            'models_found': 0,
+            "success": False,
+            "error": result.error,
+            "models_found": 0,
         }
 
     # Filter to free models
@@ -1034,16 +1081,16 @@ async def update_free_models_async(
 
     if not free_models:
         return {
-            'success': False,
-            'error': 'No free models found in API response',
-            'total_models': result.total_count,
+            "success": False,
+            "error": "No free models found in API response",
+            "total_models": result.total_count,
         }
 
     # Build lookup of existing customizations by model ID
     existing_by_id = {}
     for entry in existing_openrouter:
-        model_id = entry.get('id', '')
-        if model_id.endswith(':free') or 'FREE' in entry.get('label', ''):
+        model_id = entry.get("id", "")
+        if model_id.endswith(":free") or "FREE" in entry.get("label", ""):
             existing_by_id[model_id] = entry
 
     # Generate new model entries preserving user customizations
@@ -1057,42 +1104,61 @@ async def update_free_models_async(
         model_id_lower = model.id.lower()
         name_lower = model.name.lower()
 
-        if any(kw in model_id_lower or kw in name_lower for kw in ['deepseek-r1', 'qwq', 'reasoning']):
-            default_tier = 'free-reasoning'
-        elif any(kw in model_id_lower or kw in name_lower for kw in ['code', 'coder', 'devstral', 'starcoder']):
-            default_tier = 'free-coding'
-        elif any(kw in model_id_lower or kw in name_lower for kw in ['flash', 'mini', 'scout', 'small']):
-            default_tier = 'free-fast'
+        if any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["deepseek-r1", "qwq", "reasoning"]
+        ):
+            default_tier = "free-reasoning"
+        elif any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["code", "coder", "devstral", "starcoder"]
+        ):
+            default_tier = "free-coding"
+        elif any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["flash", "mini", "scout", "small"]
+        ):
+            default_tier = "free-fast"
         elif model.context_length >= 100000:
-            default_tier = 'free-reliable'
+            default_tier = "free-reliable"
         else:
-            default_tier = 'free'
+            default_tier = "free"
 
         # Generate timeout based on model characteristics
-        if any(kw in model_id_lower or kw in name_lower for kw in ['deepseek-r1', 'qwq', 'reasoning']):
+        if any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["deepseek-r1", "qwq", "reasoning"]
+        ):
             default_timeout = 120
-        elif any(kw in model_id_lower or kw in name_lower for kw in ['70b', '72b', '65b']):
+        elif any(
+            kw in model_id_lower or kw in name_lower for kw in ["70b", "72b", "65b"]
+        ):
             default_timeout = 60
-        elif any(kw in model_id_lower or kw in name_lower for kw in ['flash', 'mini', 'scout', 'small']):
+        elif any(
+            kw in model_id_lower or kw in name_lower
+            for kw in ["flash", "mini", "scout", "small"]
+        ):
             default_timeout = 30
         else:
             default_timeout = 45
 
         # Generate label
         label = model.name
-        if label.endswith('(free)'):
+        if label.endswith("(free)"):
             label = label[:-6].strip()
         if len(label) > 50:
-            label = label[:47] + '...'
-        label = f'{label} FREE'
+            label = label[:47] + "..."
+        label = f"{label} FREE"
 
-        new_models.append({
-            'id': model.id,
-            'label': existing.get('label', label),
-            'tier': existing.get('tier', default_tier),
-            'enabled': existing.get('enabled', True),
-            'timeout': existing.get('timeout', default_timeout),
-        })
+        new_models.append(
+            {
+                "id": model.id,
+                "label": existing.get("label", label),
+                "tier": existing.get("tier", default_tier),
+                "enabled": existing.get("enabled", True),
+                "timeout": existing.get("timeout", default_timeout),
+            }
+        )
 
     # Categorize models
     categories = discovery.categorize_free_models(free_models)
@@ -1100,60 +1166,63 @@ async def update_free_models_async(
 
     if not dry_run:
         # Update the config data
-        if 'model_registry' not in config_data:
-            config_data['model_registry'] = {}
+        if "model_registry" not in config_data:
+            config_data["model_registry"] = {}
 
         # Keep non-free models, replace free models
-        non_free_models = [m for m in existing_openrouter
-                          if not (m.get('id', '').endswith(':free') or 'FREE' in m.get('label', ''))]
-        config_data['model_registry']['openrouter'] = non_free_models + new_models
+        non_free_models = [
+            m
+            for m in existing_openrouter
+            if not (m.get("id", "").endswith(":free") or "FREE" in m.get("label", ""))
+        ]
+        config_data["model_registry"]["openrouter"] = non_free_models + new_models
 
         # Add last_updated comment at the top
-        header_comment = f'# OpenRouter free models last updated: {timestamp}\n'
+        header_comment = f"# OpenRouter free models last updated: {timestamp}\n"
 
         # Write updated config
-        with open(config_path, 'w', encoding='utf-8') as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             f.write(header_comment)
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-        logger.info(f'Updated {config_path} with {len(free_models)} free models')
+        logger.info(f"Updated {config_path} with {len(free_models)} free models")
 
     return {
-        'success': True,
-        'models_found': len(free_models),
-        'total_models': result.total_count,
-        'timestamp': timestamp,
-        'dry_run': dry_run,
-        'categories': category_counts,
+        "success": True,
+        "models_found": len(free_models),
+        "total_models": result.total_count,
+        "timestamp": timestamp,
+        "dry_run": dry_run,
+        "categories": category_counts,
     }
 
 
-@cli.command('update-models')
+@cli.command("update-models")
 @click.option(
-    '--config',
-    '-c',
-    'config_path',
+    "--config",
+    "-c",
+    "config_path",
     type=click.Path(exists=False),
     default=None,
-    help='Path to config.yaml (default: project root)',
+    help="Path to config.yaml (default: project root)",
 )
 @click.option(
-    '--api-key',
-    '-k',
-    envvar='OPENROUTER_API_KEY',
-    help='OpenRouter API key (or set OPENROUTER_API_KEY env var)',
+    "--api-key",
+    "-k",
+    envvar="OPENROUTER_API_KEY",
+    help="OpenRouter API key (or set OPENROUTER_API_KEY env var)",
 )
 @click.option(
-    '--dry-run',
-    '-n',
+    "--dry-run",
+    "-n",
     is_flag=True,
-    help='Show what would be updated without making changes',
+    help="Show what would be updated without making changes",
 )
 @click.option(
-    '--verbose',
-    '-v',
+    "--verbose",
+    "-v",
     is_flag=True,
-    help='Show detailed output',
+    help="Show detailed output",
 )
 def update_models(
     config_path: Optional[str],
@@ -1176,37 +1245,41 @@ def update_models(
     """
     path = Path(config_path) if config_path else DEFAULT_CONFIG_PATH
 
-    click.echo(click.style('Fetching models from OpenRouter API...\n', fg='cyan'))
+    click.echo(click.style("Fetching models from OpenRouter API...\n", fg="cyan"))
 
     try:
         result = asyncio.run(
             update_free_models_async(path, api_key=api_key, dry_run=dry_run)
         )
 
-        if result.get('success'):
-            mode = '[DRY RUN] ' if dry_run else ''
-            click.echo(click.style(f'{mode}Free models update complete!', fg='green', bold=True))
+        if result.get("success"):
+            mode = "[DRY RUN] " if dry_run else ""
+            click.echo(
+                click.style(
+                    f"{mode}Free models update complete!", fg="green", bold=True
+                )
+            )
             click.echo(f'  Total models in API: {result["total_models"]}')
             click.echo(f'  Free models found: {result["models_found"]}')
             click.echo(f'  Timestamp: {result["timestamp"]}')
 
-            if verbose and result.get('categories'):
-                click.echo('\n  Categories:')
-                for cat, count in result['categories'].items():
-                    click.echo(f'    {cat}: {count}')
+            if verbose and result.get("categories"):
+                click.echo("\n  Categories:")
+                for cat, count in result["categories"].items():
+                    click.echo(f"    {cat}: {count}")
 
             if dry_run:
-                click.echo('\n  Run without --dry-run to apply changes.')
+                click.echo("\n  Run without --dry-run to apply changes.")
         else:
-            click.echo(click.style(f'Error: {result.get("error")}', fg='red'), err=True)
+            click.echo(click.style(f'Error: {result.get("error")}', fg="red"), err=True)
             sys.exit(1)
 
     except FileNotFoundError as e:
-        click.echo(click.style(f'Error: {e}', fg='red'), err=True)
+        click.echo(click.style(f"Error: {e}", fg="red"), err=True)
         sys.exit(1)
     except Exception as e:
-        logger.error(f'Error updating models: {e}', exc_info=True)
-        click.echo(click.style(f'Error: {e}', fg='red'), err=True)
+        logger.error(f"Error updating models: {e}", exc_info=True)
+        click.echo(click.style(f"Error: {e}", fg="red"), err=True)
         sys.exit(1)
 
 

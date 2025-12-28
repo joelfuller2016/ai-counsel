@@ -1,4 +1,5 @@
 """Base CLI adapter with subprocess management."""
+
 import asyncio
 import logging
 import re
@@ -19,11 +20,11 @@ class BaseCLIAdapter(ABC):
     # Default prompt length limits per adapter type (in characters)
     # These are conservative limits to prevent API rejection errors
     DEFAULT_PROMPT_LIMITS: dict[str, int] = {
-        "claude": 200_000,    # Claude has large context window
-        "codex": 100_000,     # OpenAI Codex standard limit
-        "droid": 100_000,     # Droid standard limit
-        "gemini": 100_000,    # Gemini API limit (~25k tokens at 4 chars/token)
-        "llamacpp": 32_000,   # Local models typically have smaller context
+        "claude": 200_000,  # Claude has large context window
+        "codex": 100_000,  # OpenAI Codex standard limit
+        "droid": 100_000,  # Droid standard limit
+        "gemini": 100_000,  # Gemini API limit (~25k tokens at 4 chars/token)
+        "llamacpp": 32_000,  # Local models typically have smaller context
     }
 
     # Transient error patterns that warrant retry
@@ -128,7 +129,9 @@ class BaseCLIAdapter(ABC):
             RuntimeError: If CLI process fails
         """
         # Use model-specific timeout if provided, otherwise use adapter default
-        effective_timeout = timeout_override if timeout_override is not None else self.timeout
+        effective_timeout = (
+            timeout_override if timeout_override is not None else self.timeout
+        )
         # Build full prompt
         full_prompt = prompt
         if context:
@@ -153,7 +156,9 @@ class BaseCLIAdapter(ABC):
         cwd = working_directory if working_directory else os.getcwd()
 
         # Determine effective reasoning effort: runtime > config > empty string
-        effective_reasoning_effort = reasoning_effort or self.default_reasoning_effort or ""
+        effective_reasoning_effort = (
+            reasoning_effort or self.default_reasoning_effort or ""
+        )
 
         # Format arguments with {model}, {prompt}, {working_directory}, and {reasoning_effort} placeholders
         formatted_args = [
@@ -174,7 +179,9 @@ class BaseCLIAdapter(ABC):
             f"reasoning_effort={effective_reasoning_effort or '(none)'}, "
             f"prompt_length={len(full_prompt)} chars{timeout_info}"
         )
-        logger.debug(f"Full command: {self.command} {' '.join(formatted_args[:3])}... (args truncated)")
+        logger.debug(
+            f"Full command: {self.command} {' '.join(formatted_args[:3])}... (args truncated)"
+        )
 
         # Execute with retry logic for transient errors
         last_error = None
@@ -200,7 +207,7 @@ class BaseCLIAdapter(ABC):
                     is_transient = self._is_transient_error(error_msg)
 
                     if is_transient and attempt < self.max_retries:
-                        wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                        wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
                         logger.warning(
                             f"Transient error detected (attempt {attempt + 1}/{self.max_retries + 1}): {error_msg[:100]}. "
                             f"Retrying in {wait_time}s..."
@@ -234,10 +241,14 @@ class BaseCLIAdapter(ABC):
                     f"CLI invocation timed out: command={self.command}, "
                     f"model={model}, timeout={effective_timeout}s"
                 )
-                raise TimeoutError(f"CLI invocation timed out after {effective_timeout}s")
+                raise TimeoutError(
+                    f"CLI invocation timed out after {effective_timeout}s"
+                )
 
         # All retries exhausted
-        raise RuntimeError(f"CLI failed after {self.max_retries + 1} attempts. Last error: {last_error}")
+        raise RuntimeError(
+            f"CLI failed after {self.max_retries + 1} attempts. Last error: {last_error}"
+        )
 
     def _is_transient_error(self, error_msg: str) -> bool:
         """
@@ -250,8 +261,10 @@ class BaseCLIAdapter(ABC):
             True if error is transient (503, 429, connection issues, etc.)
         """
         error_lower = error_msg.lower()
-        return any(re.search(pattern, error_lower, re.IGNORECASE)
-                   for pattern in self.TRANSIENT_ERROR_PATTERNS)
+        return any(
+            re.search(pattern, error_lower, re.IGNORECASE)
+            for pattern in self.TRANSIENT_ERROR_PATTERNS
+        )
 
     def _adjust_args_for_context(self, is_deliberation: bool) -> list[str]:
         """

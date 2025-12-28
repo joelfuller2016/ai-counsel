@@ -5,6 +5,7 @@ rate limit (429) responses, and server errors (500, 502, 503).
 
 Uses pytest and mock/httpx patterns consistent with existing test_base_http_adapter.py.
 """
+
 import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -182,7 +183,9 @@ class TestTimeoutHandling:
         adapter = ConcreteHTTPAdapter(base_url="http://test", timeout=30)
 
         with pytest.raises(TimeoutError) as exc_info:
-            await adapter.invoke(prompt="test", model="test-model", timeout_override=120)
+            await adapter.invoke(
+                prompt="test", model="test-model", timeout_override=120
+            )
 
         assert "120" in str(exc_info.value)
 
@@ -930,9 +933,7 @@ class TestMixedErrorScenarios:
         )
 
         mock_client = AsyncMock()
-        mock_client.post = AsyncMock(
-            side_effect=[mock_response_500, mock_response_400]
-        )
+        mock_client.post = AsyncMock(side_effect=[mock_response_500, mock_response_400])
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
         mock_client_class.return_value = mock_client

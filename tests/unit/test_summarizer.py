@@ -1,4 +1,5 @@
 """Unit tests for summarizer module including BasicSummarizer fallback."""
+
 import pytest
 from datetime import datetime
 
@@ -25,8 +26,8 @@ class TestBasicSummarizer:
                     "I believe Option A is the better choice because it offers "
                     "better maintainability and follows established patterns.\n\n"
                     "The key consideration here is long-term sustainability.\n\n"
-                    "VOTE: {\"option\": \"Option A\", \"confidence\": 0.85, "
-                    "\"rationale\": \"Better maintainability\"}"
+                    'VOTE: {"option": "Option A", "confidence": 0.85, '
+                    '"rationale": "Better maintainability"}'
                 ),
                 timestamp=datetime.now().isoformat(),
             ),
@@ -37,8 +38,8 @@ class TestBasicSummarizer:
                     "After careful analysis, Option A provides the best balance "
                     "of performance and readability.\n\n"
                     "The performance benchmarks support this conclusion.\n\n"
-                    "VOTE: {\"option\": \"Option A\", \"confidence\": 0.9, "
-                    "\"rationale\": \"Best balance of concerns\"}"
+                    'VOTE: {"option": "Option A", "confidence": 0.9, '
+                    '"rationale": "Best balance of concerns"}'
                 ),
                 timestamp=datetime.now().isoformat(),
             ),
@@ -191,7 +192,7 @@ class TestBasicSummarizer:
                 participant="model@cli",
                 response=(
                     "Let me check the code.\n\n"
-                    "TOOL_REQUEST: {\"name\": \"read_file\", \"arguments\": {}}\n\n"
+                    'TOOL_REQUEST: {"name": "read_file", "arguments": {}}\n\n'
                     "Based on my analysis, Option A is better because it provides "
                     "better error handling and cleaner separation of concerns."
                 ),
@@ -300,7 +301,10 @@ class TestDeliberationSummarizerFallback:
 
         # Should return error fallback (from DeliberationSummarizer's own error handling)
         assert isinstance(summary, Summary)
-        assert "failed" in summary.consensus.lower() or "error" in summary.key_agreements[0].lower()
+        assert (
+            "failed" in summary.consensus.lower()
+            or "error" in summary.key_agreements[0].lower()
+        )
 
 
 class TestSummaryIntegration:

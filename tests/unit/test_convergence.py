@@ -1,4 +1,5 @@
 """Unit tests for convergence detection."""
+
 import pytest
 
 try:
@@ -6,8 +7,11 @@ try:
 except ImportError:
     ConvergenceDetector = None
 
-from deliberation.convergence import (JaccardBackend,
-                                      SentenceTransformerBackend, TFIDFBackend)
+from deliberation.convergence import (
+    JaccardBackend,
+    SentenceTransformerBackend,
+    TFIDFBackend,
+)
 
 # =============================================================================
 # Jaccard Similarity Backend Tests
@@ -617,7 +621,7 @@ class TestImpasseDetection:
         ]
 
         result = detector.check_convergence(round3, round2, round_number=3)
-        
+
         # Should be refining (similarity between thresholds)
         assert result.status == "refining"
         assert detector.consecutive_divergent_count == 0
@@ -849,7 +853,9 @@ class TestImpasseDetection:
             "Quantum computing will revolutionize cryptography and security",
         ]
 
-        for i in range(2, 8):  # rounds 2-7, but round 2 returns None (min_rounds_before_check)
+        for i in range(
+            2, 8
+        ):  # rounds 2-7, but round 2 returns None (min_rounds_before_check)
             curr = [
                 RoundResponse(
                     round=i,
@@ -935,7 +941,7 @@ class TestImpasseDetection:
         ]
 
         result = detector.check_convergence(round4, round3, round_number=4)
-        
+
         # Should reset counter
         assert result.status == "refining"
         assert detector.consecutive_divergent_count == 0

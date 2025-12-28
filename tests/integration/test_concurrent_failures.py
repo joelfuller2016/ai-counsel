@@ -6,6 +6,7 @@ degradation behavior.
 
 Uses pytest patterns consistent with existing integration tests.
 """
+
 import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -30,7 +31,9 @@ class TestMultipleSimultaneousFailures:
     def all_failing_adapters(self):
         """Create adapters that all fail."""
         claude_adapter = AsyncMock()
-        claude_adapter.invoke = AsyncMock(side_effect=Exception("Claude API unavailable"))
+        claude_adapter.invoke = AsyncMock(
+            side_effect=Exception("Claude API unavailable")
+        )
 
         ollama_adapter = AsyncMock()
         ollama_adapter.invoke = AsyncMock(
@@ -38,7 +41,9 @@ class TestMultipleSimultaneousFailures:
         )
 
         lmstudio_adapter = AsyncMock()
-        lmstudio_adapter.invoke = AsyncMock(side_effect=TimeoutError("Request timed out"))
+        lmstudio_adapter.invoke = AsyncMock(
+            side_effect=TimeoutError("Request timed out")
+        )
 
         return {
             "claude": claude_adapter,
@@ -107,7 +112,9 @@ class TestMultipleSimultaneousFailures:
         assert result.status == "complete"
         # All should have error responses
         error_count = sum(
-            1 for r in result.full_debate if "[ERROR:" in r.response or "ERROR" in r.response
+            1
+            for r in result.full_debate
+            if "[ERROR:" in r.response or "ERROR" in r.response
         )
         assert error_count == 3
 
@@ -130,6 +137,7 @@ class TestMultipleSimultaneousFailures:
                     return f"{name} round 2 response"
                 else:
                     raise Exception(f"{name} failed in round 3")
+
             return invoke
 
         adapters = {
@@ -142,9 +150,11 @@ class TestMultipleSimultaneousFailures:
             adapters[name].invoke = AsyncMock(side_effect=create_round_aware_mock(name))
             # Wrap to track calls
             original = adapters[name].invoke
+
             async def counting_invoke(*args, _orig=original, **kwargs):
                 round_counter["count"] += 1
                 return await _orig(*args, **kwargs)
+
             adapters[name].invoke = AsyncMock(side_effect=counting_invoke)
 
         engine = DeliberationEngine(adapters=adapters, config=config)
@@ -224,11 +234,13 @@ class TestPartialFailures:
 
         # Two should succeed, one should fail
         successful = [
-            r for r in result.full_debate
+            r
+            for r in result.full_debate
             if "[ERROR:" not in r.response and "ERROR" not in r.response
         ]
         failed = [
-            r for r in result.full_debate
+            r
+            for r in result.full_debate
             if "[ERROR:" in r.response or "ERROR" in r.response
         ]
 
@@ -251,9 +263,7 @@ class TestPartialFailures:
             return_value='Only Claude works!\nVOTE: {"option": "Solo", "confidence": 0.8, "rationale": "Only opinion", "continue_debate": false}'
         )
         adapters["ollama"].invoke = AsyncMock(side_effect=TimeoutError("Timeout"))
-        adapters["lmstudio"].invoke = AsyncMock(
-            side_effect=Exception("Server crashed")
-        )
+        adapters["lmstudio"].invoke = AsyncMock(side_effect=Exception("Server crashed"))
 
         engine = DeliberationEngine(adapters=adapters, config=config)
 
@@ -276,7 +286,8 @@ class TestPartialFailures:
 
         # One success, two failures
         successful = [
-            r for r in result.full_debate
+            r
+            for r in result.full_debate
             if "[ERROR:" not in r.response and "ERROR" not in r.response
         ]
         assert len(successful) == 1
@@ -325,6 +336,7 @@ class TestPartialFailures:
                     raise Exception("LM Studio fails in round 3")
                 else:
                     return f"{name} response in round {current_round}"
+
             return invoke
 
         adapters = {
@@ -404,13 +416,14 @@ class TestTransientFailureRecovery:
         assert result.rounds_completed >= 2
 
         # Find ollama responses
-        ollama_responses = [
-            r for r in result.full_debate if "ollama" in r.participant
-        ]
+        ollama_responses = [r for r in result.full_debate if "ollama" in r.participant]
         assert len(ollama_responses) == 2
 
         # First should be error, second should be success
-        assert "[ERROR:" in ollama_responses[0].response or "ERROR" in ollama_responses[0].response
+        assert (
+            "[ERROR:" in ollama_responses[0].response
+            or "ERROR" in ollama_responses[0].response
+        )
         assert "[ERROR:" not in ollama_responses[1].response
 
     @pytest.mark.asyncio
@@ -418,7 +431,7 @@ class TestTransientFailureRecovery:
         """Test handling of intermittent failures that eventually succeed."""
         failure_pattern = {
             "claude": [False, True, False],  # Fail, Success, Fail
-            "ollama": [True, False, True],   # Success, Fail, Success
+            "ollama": [True, False, True],  # Success, Fail, Success
         }
         call_counts = {"claude": 0, "ollama": 0}
 
@@ -432,6 +445,7 @@ class TestTransientFailureRecovery:
                     return f"{name} succeeded this time"
                 else:
                     raise Exception(f"{name} failed this time")
+
             return invoke
 
         adapters = {
@@ -439,7 +453,9 @@ class TestTransientFailureRecovery:
             "ollama": AsyncMock(),
         }
         for name in adapters:
-            adapters[name].invoke = AsyncMock(side_effect=create_intermittent_mock(name))
+            adapters[name].invoke = AsyncMock(
+                side_effect=create_intermittent_mock(name)
+            )
 
         engine = DeliberationEngine(adapters=adapters, config=config)
 
@@ -469,6 +485,7 @@ class TestTransientFailureRecovery:
                 if call_counts[name] == 1:
                     raise Exception(f"{name} initial failure")
                 return f"{name} recovered in round {call_counts[name]}"
+
             return invoke
 
         adapters = {
@@ -477,7 +494,9 @@ class TestTransientFailureRecovery:
             "lmstudio": AsyncMock(),
         }
         for name in adapters:
-            adapters[name].invoke = AsyncMock(side_effect=create_delayed_recovery_mock(name))
+            adapters[name].invoke = AsyncMock(
+                side_effect=create_delayed_recovery_mock(name)
+            )
 
         engine = DeliberationEngine(adapters=adapters, config=config)
 
@@ -553,7 +572,8 @@ class TestGracefulDegradation:
 
         # Verify one success
         successful = [
-            r for r in result.full_debate
+            r
+            for r in result.full_debate
             if "[ERROR:" not in r.response and "ERROR" not in r.response
         ]
         assert len(successful) == 1
@@ -609,7 +629,9 @@ class TestGracefulDegradation:
 
         adapters["claude"].invoke = AsyncMock(return_value="Claude works")
         adapters["ollama"].invoke = AsyncMock(side_effect=Exception("Ollama fails"))
-        adapters["lmstudio"].invoke = AsyncMock(side_effect=Exception("LM Studio fails"))
+        adapters["lmstudio"].invoke = AsyncMock(
+            side_effect=Exception("LM Studio fails")
+        )
 
         engine = DeliberationEngine(adapters=adapters, config=config)
 
@@ -637,7 +659,9 @@ class TestGracefulDegradation:
         assert any("lmstudio" in p for p in participants)
 
     @pytest.mark.asyncio
-    async def test_deliberation_completes_in_reasonable_time_with_failures(self, config):
+    async def test_deliberation_completes_in_reasonable_time_with_failures(
+        self, config
+    ):
         """Test that failures don't cause excessive delays.
 
         Note: The deliberation engine has background operations (AI summarization,
@@ -748,8 +772,7 @@ class TestConcurrentExecutionStress:
         request = DeliberateRequest(
             question="Stress test",
             participants=[
-                Participant(cli=name, model="test-model")
-                for name in adapter_names
+                Participant(cli=name, model="test-model") for name in adapter_names
             ],
             rounds=1,
             mode="quick",
@@ -763,7 +786,8 @@ class TestConcurrentExecutionStress:
 
         # 3 should succeed, 3 should fail
         successful = [
-            r for r in result.full_debate
+            r
+            for r in result.full_debate
             if "[ERROR:" not in r.response and "ERROR" not in r.response
         ]
         assert len(successful) == 3
@@ -783,7 +807,9 @@ class TestConcurrentExecutionStress:
             "lmstudio": AsyncMock(),
         }
         for name in adapters:
-            adapters[name].invoke = AsyncMock(side_effect=lambda n=name: delayed_failure(n))
+            adapters[name].invoke = AsyncMock(
+                side_effect=lambda n=name: delayed_failure(n)
+            )
 
         engine = DeliberationEngine(adapters=adapters, config=config)
 
@@ -804,8 +830,7 @@ class TestConcurrentExecutionStress:
         assert result.status == "complete"
         # All should have error responses
         assert all(
-            "[ERROR:" in r.response or "ERROR" in r.response
-            for r in result.full_debate
+            "[ERROR:" in r.response or "ERROR" in r.response for r in result.full_debate
         )
 
 

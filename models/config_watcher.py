@@ -3,6 +3,7 @@
 Provides hot-reload capability for config.yaml changes without server restart.
 Uses watchdog for cross-platform file system monitoring.
 """
+
 import logging
 import threading
 import time
@@ -23,6 +24,7 @@ class ConfigChangeEvent:
         changed_sections: List of section names that changed
         timestamp: Unix timestamp of the change
     """
+
     def __init__(
         self,
         old_config: Config,
@@ -137,7 +139,9 @@ class ConfigWatcher:
         with self._lock:
             if callback in self._listeners:
                 self._listeners.remove(callback)
-                logger.debug(f"Removed config change listener, remaining: {len(self._listeners)}")
+                logger.debug(
+                    f"Removed config change listener, remaining: {len(self._listeners)}"
+                )
 
     def _detect_changed_sections(self, old: Config, new: Config) -> List[str]:
         """
@@ -240,8 +244,7 @@ class ConfigWatcher:
             raise
         except Exception as e:
             logger.warning(
-                f"Config reload failed, keeping previous config: {e}",
-                exc_info=True
+                f"Config reload failed, keeping previous config: {e}", exc_info=True
             )
             return False
 

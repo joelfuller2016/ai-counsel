@@ -1,5 +1,7 @@
 """Test that required dependencies are available."""
 
+import pytest
+
 
 def test_httpx_importable():
     """Verify httpx can be imported."""
@@ -17,6 +19,5 @@ def test_tenacity_importable():
 
 def test_vcrpy_importable():
     """Verify vcrpy can be imported for testing."""
-    import vcr
-
+    vcr = pytest.importorskip("vcr")
     assert hasattr(vcr, "VCR")

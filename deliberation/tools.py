@@ -1,4 +1,5 @@
 """Tool execution infrastructure for evidence-based deliberation."""
+
 import asyncio
 import logging
 import json
@@ -268,9 +269,11 @@ class ToolExecutor:
             "deliberation_calls": self._deliberation_call_count,
             "max_deliberation_calls": self._max_calls_per_deliberation,
             "cooldown_seconds": self._cooldown_seconds,
-            "time_since_last_call": time.monotonic() - self._last_call_time
-            if self._last_call_time > 0
-            else None,
+            "time_since_last_call": (
+                time.monotonic() - self._last_call_time
+                if self._last_call_time > 0
+                else None
+            ),
         }
 
     async def _enforce_rate_limits(self, tool_name: str) -> Optional[ToolResult]:
@@ -583,9 +586,7 @@ class SearchCodeTool(BaseTool):
             )
 
             # Try ripgrep first (faster)
-            result = await self._search_with_ripgrep(
-                pattern, str(resolved_path)
-            )
+            result = await self._search_with_ripgrep(pattern, str(resolved_path))
             if result and result.success:
                 return result
             if result and not result.success:
@@ -616,7 +617,8 @@ class SearchCodeTool(BaseTool):
         try:
             # Check if rg is available (async to avoid blocking event loop)
             proc = await asyncio.create_subprocess_exec(
-                "rg", "--version",
+                "rg",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -859,7 +861,13 @@ class RunCommandTool(BaseTool):
         "ls-files",
         "blame",
     }
-    DISALLOWED_FIND_FLAGS: ClassVar[Set[str]] = {"-exec", "-execdir", "-ok", "-okdir", "-delete"}
+    DISALLOWED_FIND_FLAGS: ClassVar[Set[str]] = {
+        "-exec",
+        "-execdir",
+        "-ok",
+        "-okdir",
+        "-delete",
+    }
 
     @property
     def name(self) -> str:
@@ -916,9 +924,7 @@ class RunCommandTool(BaseTool):
                     error=str(e),
                 )
 
-        validation_error = self._validate_command_args(
-            command, args, base_dir
-        )
+        validation_error = self._validate_command_args(command, args, base_dir)
         if validation_error:
             return ToolResult(
                 tool_name=self.name,
@@ -996,11 +1002,15 @@ class RunCommandTool(BaseTool):
             # Check both original case and lowercase versions to prevent case-based bypass
             original_args = {str(arg) for arg in args}
             lowered_args = {str(arg).lower() for arg in args}
-            
+
             # Check against disallowed flags (which are stored in lowercase)
-            blocked_original = {arg for arg in original_args if arg.lower() in self.DISALLOWED_FIND_FLAGS}
+            blocked_original = {
+                arg
+                for arg in original_args
+                if arg.lower() in self.DISALLOWED_FIND_FLAGS
+            }
             blocked_lowered = self.DISALLOWED_FIND_FLAGS & lowered_args
-            
+
             # Report the original case flags that were blocked
             if blocked_original:
                 return (
@@ -1106,7 +1116,7 @@ class GetFileTreeTool(BaseTool):
                 str(target_path),
                 max_depth=clamped_depth,
                 max_files=clamped_files,
-                ascii_only=True  # Use ASCII for tool responses (avoids \uXXXX in JSON)
+                ascii_only=True,  # Use ASCII for tool responses (avoids \uXXXX in JSON)
             )
 
             if not tree:

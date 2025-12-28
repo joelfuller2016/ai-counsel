@@ -1,4 +1,5 @@
 """Unit tests for context compression module."""
+
 import pytest
 
 from deliberation.compression import (
@@ -170,7 +171,7 @@ VOTE: {"option": "Option A", "confidence": 0.85, "rationale": "Strong reasons"}"
         """Test vote extraction truncates long rationales."""
         compressor = ContextCompressor(max_rationale_length=20)
 
-        response_text = '''VOTE: {"option": "A", "confidence": 0.9, "rationale": "This is a very long rationale that should be truncated to preserve context space"}'''
+        response_text = """VOTE: {"option": "A", "confidence": 0.9, "rationale": "This is a very long rationale that should be truncated to preserve context space"}"""
 
         vote = compressor._extract_vote(response_text, "model@cli", 1)
 
@@ -307,8 +308,8 @@ VOTE: {"option": "Option A", "confidence": 0.85, "rationale": "Strong reasons"}"
                 RoundResponse(
                     round=round_num,
                     participant="claude@cli",
-                    response=f'Round {round_num} Claude analysis: {long_content * 5}\n\n'
-                              f'VOTE: {{"option": "A", "confidence": 0.9, "rationale": "Round {round_num} vote with detailed reasoning"}}',
+                    response=f"Round {round_num} Claude analysis: {long_content * 5}\n\n"
+                    f'VOTE: {{"option": "A", "confidence": 0.9, "rationale": "Round {round_num} vote with detailed reasoning"}}',
                     timestamp=f"2024-01-01T00:00:{round_num:02d}",
                 )
             )
@@ -316,8 +317,8 @@ VOTE: {"option": "Option A", "confidence": 0.85, "rationale": "Strong reasons"}"
                 RoundResponse(
                     round=round_num,
                     participant="codex@cli",
-                    response=f'Round {round_num} Codex analysis: {long_content * 5}\n\n'
-                              f'VOTE: {{"option": "A", "confidence": 0.85, "rationale": "Codex round {round_num} detailed vote"}}',
+                    response=f"Round {round_num} Codex analysis: {long_content * 5}\n\n"
+                    f'VOTE: {{"option": "A", "confidence": 0.85, "rationale": "Codex round {round_num} detailed vote"}}',
                     timestamp=f"2024-01-01T00:00:{round_num+10:02d}",
                 )
             )

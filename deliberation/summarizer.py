@@ -1,4 +1,5 @@
 """AI-powered summary generation for deliberations."""
+
 import logging
 import re
 from typing import Dict, List, Optional, Union
@@ -221,12 +222,12 @@ Please be concise and focus on the substance of the arguments, not formatting or
 
         return Summary(
             consensus=consensus,
-            key_agreements=agreements
-            if agreements
-            else ["No specific agreements identified"],
-            key_disagreements=disagreements
-            if disagreements
-            else ["No significant disagreements"],
+            key_agreements=(
+                agreements if agreements else ["No specific agreements identified"]
+            ),
+            key_disagreements=(
+                disagreements if disagreements else ["No significant disagreements"]
+            ),
             final_recommendation=recommendation,
         )
 
@@ -306,12 +307,16 @@ class BasicSummarizer:
 
         return Summary(
             consensus=f"[Auto-generated fallback summary] {consensus}",
-            key_agreements=key_agreements
-            if key_agreements
-            else ["Unable to extract specific agreements from responses"],
-            key_disagreements=key_disagreements
-            if key_disagreements
-            else ["Unable to extract specific disagreements from responses"],
+            key_agreements=(
+                key_agreements
+                if key_agreements
+                else ["Unable to extract specific agreements from responses"]
+            ),
+            key_disagreements=(
+                key_disagreements
+                if key_disagreements
+                else ["Unable to extract specific disagreements from responses"]
+            ),
             final_recommendation=recommendation,
         )
 
@@ -393,9 +398,7 @@ class BasicSummarizer:
         else:
             return "Deliberation completed without clear voting outcome."
 
-    def _find_agreements(
-        self, participant_points: Dict[str, List[str]]
-    ) -> List[str]:
+    def _find_agreements(self, participant_points: Dict[str, List[str]]) -> List[str]:
         """
         Find potential areas of agreement based on participant responses.
 
@@ -415,7 +418,9 @@ class BasicSummarizer:
                 agreements.append(f"{short_participant}: {points[0]}")
 
         if not agreements:
-            agreements = ["Participants provided analysis but specific agreements could not be extracted"]
+            agreements = [
+                "Participants provided analysis but specific agreements could not be extracted"
+            ]
 
         return agreements[:5]  # Limit to 5 items
 

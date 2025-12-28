@@ -1,4 +1,5 @@
 """Tests for OpenRouter adapter with rate limit handling."""
+
 import asyncio
 import os
 from datetime import datetime, timezone
@@ -44,7 +45,9 @@ class TestOpenRouterAdapter:
         adapter = OpenRouterAdapter(
             base_url="https://openrouter.ai/api/v1", api_key="sk-test"
         )
-        assert adapter.rate_limit_retries == OpenRouterAdapter.DEFAULT_RATE_LIMIT_RETRIES
+        assert (
+            adapter.rate_limit_retries == OpenRouterAdapter.DEFAULT_RATE_LIMIT_RETRIES
+        )
         assert adapter.base_retry_delay == OpenRouterAdapter.DEFAULT_BASE_RETRY_DELAY
 
     def test_build_request_structure(self):
@@ -447,9 +450,7 @@ class TestHealthCheck:
         """Test successful health check."""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "choices": [{"message": {"content": "Hi"}}]
-        }
+        mock_response.json.return_value = {"choices": [{"message": {"content": "Hi"}}]}
         mock_response.raise_for_status = Mock()
 
         mock_client = AsyncMock()

@@ -1,4 +1,5 @@
 """Unit tests for config watcher module."""
+
 import os
 import tempfile
 import threading
