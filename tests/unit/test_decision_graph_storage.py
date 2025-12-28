@@ -959,7 +959,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha position with unique perspective",
+                response="The quantum mechanics equations describe particle behavior in atoms.",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -968,7 +968,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Beta position completely different view",
+                response="I enjoy cooking Italian pasta with fresh tomatoes and basil leaves.",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -1124,7 +1124,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha",
+                response="The sun provides solar energy through nuclear fusion reactions.",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -1133,7 +1133,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Zeta",
+                response="Python programming language was created by Guido van Rossum.",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -1142,7 +1142,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=4,
                 participant="claude@cli",
-                response="Omega",
+                response="Scuba diving allows exploration of underwater marine ecosystems.",
                 timestamp="2025-01-01T00:02:00",
             )
         ]
@@ -1172,7 +1172,7 @@ class TestImpasseDetection:
                                 "enabled": True,
                                 "semantic_similarity_threshold": 0.85,
                                 "divergence_threshold": 0.40,
-                                "min_rounds_before_check": 2,
+                                "min_rounds_before_check": 1,
                                 "consecutive_stable_rounds": 3,
                             },
                         )()
@@ -1188,7 +1188,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha",
+                response="The sun provides solar energy through nuclear fusion reactions.",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -1197,7 +1197,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Zeta",
+                response="Python programming language was created by Guido van Rossum.",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -1292,7 +1292,7 @@ class TestImpasseDetection:
                                 "enabled": True,
                                 "semantic_similarity_threshold": 0.85,
                                 "divergence_threshold": 0.40,
-                                "min_rounds_before_check": 2,
+                                "min_rounds_before_check": 1,
                                 "consecutive_stable_rounds": 5,
                             },
                         )()
@@ -1303,13 +1303,21 @@ class TestImpasseDetection:
 
         detector = ConvergenceDetector(config)
 
-        # Create 5 rounds of divergence
+        # Create 5 rounds of divergence with semantically different content
+        divergent_texts = [
+            "The sun provides solar energy through nuclear fusion reactions.",
+            "Chocolate chip cookies are a delicious dessert for parties.",
+            "Ancient Roman architecture influenced modern building design.",
+            "Mountain climbing requires specialized equipment and training.",
+            "Jazz music originated in New Orleans in the early 1900s.",
+            "Python programming language was created by Guido van Rossum.",
+        ]
         for i in range(2, 7):
             curr = [
                 RoundResponse(
                     round=i,
                     participant="claude@cli",
-                    response=f"Divergent response number {i}",
+                    response=divergent_texts[i - 1],
                     timestamp=f"2025-01-01T00:0{i}:00",
                 )
             ]
@@ -1317,7 +1325,7 @@ class TestImpasseDetection:
                 RoundResponse(
                     round=i - 1,
                     participant="claude@cli",
-                    response=f"Divergent response number {i - 1}",
+                    response=divergent_texts[i - 2],
                     timestamp=f"2025-01-01T00:0{i-1}:00",
                 )
             ]
@@ -1362,7 +1370,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=2,
                 participant="claude@cli",
-                response="Alpha position",
+                response="The ocean contains billions of fish swimming in saltwater.",
                 timestamp="2025-01-01T00:00:00",
             )
         ]
@@ -1371,7 +1379,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=3,
                 participant="claude@cli",
-                response="Zeta position",
+                response="Quantum computers use qubits instead of classical bits.",
                 timestamp="2025-01-01T00:01:00",
             )
         ]
@@ -1384,7 +1392,7 @@ class TestImpasseDetection:
             RoundResponse(
                 round=4,
                 participant="claude@cli",
-                response="Zeta position with slight modifications",
+                response="The field of quantum science has advanced computing technology.",
                 timestamp="2025-01-01T00:02:00",
             )
         ]

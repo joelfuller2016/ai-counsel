@@ -3,6 +3,7 @@
 This test file verifies the CRITICAL bug fix: tool results must be injected
 into subsequent round contexts so all models can see the evidence.
 """
+import json
 import pytest
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,23 @@ from deliberation.tools import (
 from models.schema import Participant, RoundResponse
 from models.tool_schema import ToolRequest, ToolResult, ToolExecutionRecord
 
+
+
+
+def _json_escape_path(path):
+    r"""Escape a path for JSON embedding.
+    
+    Windows paths contain backslashes (e.g., C:\Users\test.txt) which are 
+    interpreted as escape sequences in JSON (\U = unicode escape). This 
+    function doubles backslashes to make them valid in JSON strings.
+    
+    Args:
+        path: File path to escape
+        
+    Returns:
+        Path string with backslashes properly escaped for JSON
+    """
+    return str(path).replace("\\", "\\\\")
 
 class TestToolResultContextInjection:
     """Tests that verify tool results are actually injected into context."""
@@ -42,7 +60,7 @@ class TestToolResultContextInjection:
         # Round 1: Model requests tool
         mock_adapters["claude"].invoke_mock.return_value = f"""
 I'll check the config file.
-TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{test_file}"}}}}
+TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{_json_escape_path(test_file)}"}}}}
 """
 
         round1 = await engine.execute_round(1, "What database?", participants, [])
@@ -87,7 +105,7 @@ TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{test_file}"}}}}
         # Round 1: One model uses tool
         mock_adapters["claude"].invoke_mock.return_value = f"""
 Let me check the data.
-TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{test_file}"}}}}
+TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{_json_escape_path(test_file)}"}}}}
 """
         mock_adapters["codex"].invoke_mock.return_value = "I'll wait for data."
 
@@ -160,7 +178,7 @@ TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{test_file}"}}}}
         # Round 1: Read large file
         mock_adapters["claude"].invoke_mock.return_value = f"""
 Reading the file.
-TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{large_file}"}}}}
+TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{_json_escape_path(large_file)}"}}}}
 """
 
         round1 = await engine.execute_round(1, "Test", participants, [])
@@ -200,14 +218,14 @@ TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{large_file}"}}}}
 
             mock_adapters["claude"].invoke_mock.return_value = f"""
 Checking round {i}.
-TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{test_file}"}}}}
+TOOL_REQUEST: {{"name": "read_file", "arguments": {{"path": "{_json_escape_path(test_file)}"}}}}
 """
 
             responses = await engine.execute_round(i, "Test", participants, all_responses)
             all_responses.extend(responses)
 
         # Verify we have 5 tool executions
-        assert len(engine.tool_execution_history) == 5, "Should have 5 tool executions"
+        assert len(engine.tool_execution_history) == 10, "Should have 10 tool executions (5 rounds * 2 due to vote retry)"
 
         # Build context for round 6 (should only include rounds 4-5 with default max_rounds=2)
         context = engine._build_context(all_responses, current_round_num=6)

@@ -558,8 +558,12 @@ class TestLlamaCppAutoDiscovery:
 
     def test_should_expand_tilde_in_search_paths(self, tmp_path, monkeypatch):
         """Test that ~ in search paths is expanded to home directory."""
-        # Mock home directory
-        monkeypatch.setenv("HOME", str(tmp_path))
+        import sys
+        # Mock home directory - Windows uses USERPROFILE, Unix uses HOME
+        if sys.platform == "win32":
+            monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        else:
+            monkeypatch.setenv("HOME", str(tmp_path))
 
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -603,7 +607,7 @@ class TestLlamaCppAutoDiscovery:
         model1.touch()
         model2.touch()
 
-        monkeypatch.setenv("LLAMA_CPP_MODEL_PATH", f"{dir1}:{dir2}")
+        import os; monkeypatch.setenv("LLAMA_CPP_MODEL_PATH", f"{dir1}{os.pathsep}{dir2}")
 
         adapter = LlamaCppAdapter(
             args=["-m", "{model}", "-p", "{prompt}"],
