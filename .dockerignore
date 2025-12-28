@@ -1,0 +1,89 @@
+# AI Counsel Docker Ignore
+# ============================================================
+# Files and directories to exclude from Docker build context.
+# This reduces build time and image size.
+
+# Git
+.git
+.gitignore
+.github
+
+# Claude/Counsel config
+.claude
+.counsel
+.spec-kit
+CLAUDE.md
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+env
+.eggs
+*.egg-info
+*.egg
+.mypy_cache
+.pytest_cache
+.benchmarks
+htmlcov
+.coverage
+.coverage.*
+
+# Testing
+tests
+test_*.txt
+*.log
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Documentation (keep in container for reference)
+# docs
+
+# Build artifacts
+dist
+build
+*.manifest
+
+# Local configuration
+.env
+.env.local
+.env.*.local
+*.local.yaml
+secret*.yaml
+
+# Transcripts and data (mounted as volumes)
+transcripts
+decision_graph.db
+deliberation_progress.log
+mcp_server.log
+
+# Kubernetes manifests (not needed in container)
+kubernetes
+
+# Docker files (recursive copy prevention)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Demos (optional - comment out if needed)
+demo_*.py
+examples
+
+# Large files
+*.db
+*.sqlite
+*.sqlite3

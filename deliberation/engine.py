@@ -15,10 +15,126 @@ from deliberation.convergence import ConvergenceDetector
 from deliberation.file_tree import generate_file_tree
 from deliberation.metrics import get_quality_tracker
 from models.config import FileTreeConfig, VoteRetryConfig
-from models.schema import Participant, RoundResponse, Vote, VotingResult
+from models.schema import CostSavings, Participant, RoundResponse, Vote, VotingResult
 from models.tool_schema import ToolExecutionRecord
 
 logger = logging.getLogger(__name__)
+
+
+# Free/local adapters that incur no API costs
+FREE_ADAPTERS = {"ollama", "lmstudio", "llamacpp"}
+
+# Estimated token costs per 1K tokens (USD) for reference paid models
+# These are approximate costs used for savings estimation
+PAID_MODEL_COSTS = {
+    # Claude models (per 1K tokens)
+    "claude-opus-4-5-20251101": {"input": 0.015, "output": 0.075},
+    "claude-sonnet-4-5-20250929": {"input": 0.003, "output": 0.015},
+    "sonnet": {"input": 0.003, "output": 0.015},
+    "opus": {"input": 0.015, "output": 0.075},
+    # OpenAI/Codex models
+    "gpt-5.2-codex": {"input": 0.005, "output": 0.015},
+    "gpt-5.1-codex": {"input": 0.003, "output": 0.012},
+    "gpt-5.1-codex-mini": {"input": 0.0015, "output": 0.006},
+    "gpt-4": {"input": 0.03, "output": 0.06},
+    # Gemini models
+    "gemini-2.5-pro": {"input": 0.00125, "output": 0.005},
+    "gemini-2.0-flash": {"input": 0.0001, "output": 0.0004},
+    # Default fallback for unknown paid models
+    "default": {"input": 0.003, "output": 0.015},
+}
+
+
+class CostTracker:
+    """Tracks cost savings for free model deliberations.
+
+    Estimates what the deliberation would have cost if paid models were used,
+    comparing against actual cost for free/local models.
+    """
+
+    # Average chars per token (conservative estimate for English text)
+    CHARS_PER_TOKEN = 4
+
+    def __init__(self):
+        """Initialize cost tracking state."""
+        self.reset()
+
+    def reset(self):
+        """Reset tracking state for a new deliberation."""
+        self.free_invocations = 0
+        self.paid_invocations = 0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.actual_cost = 0.0
+        self.estimated_cost = 0.0
+        self.cost_breakdown: Dict[str, float] = {}
+
+    def _estimate_tokens(self, text: str) -> int:
+        """Estimate token count from text length."""
+        if not text:
+            return 0
+        return len(text) // self.CHARS_PER_TOKEN
+
+    def _get_model_costs(self, model: str) -> Dict[str, float]:
+        """Get cost rates for a model."""
+        if model in PAID_MODEL_COSTS:
+            return PAID_MODEL_COSTS[model]
+        model_lower = model.lower() if model else ""
+        for key in PAID_MODEL_COSTS:
+            if key in model_lower or model_lower in key:
+                return PAID_MODEL_COSTS[key]
+        return PAID_MODEL_COSTS["default"]
+
+    def track_invocation(
+        self,
+        adapter_name: str,
+        model: str,
+        input_text: str,
+        output_text: str,
+    ):
+        """Track a single model invocation for cost calculation."""
+        input_tokens = self._estimate_tokens(input_text)
+        output_tokens = self._estimate_tokens(output_text)
+
+        self.total_input_tokens += input_tokens
+        self.total_output_tokens += output_tokens
+
+        is_free = adapter_name.lower() in FREE_ADAPTERS
+
+        if is_free:
+            self.free_invocations += 1
+            costs = PAID_MODEL_COSTS["default"]
+        else:
+            self.paid_invocations += 1
+            costs = self._get_model_costs(model)
+
+        input_cost = (input_tokens / 1000) * costs["input"]
+        output_cost = (output_tokens / 1000) * costs["output"]
+        invocation_cost = input_cost + output_cost
+
+        model_key = f"{model}@{adapter_name}"
+        if model_key not in self.cost_breakdown:
+            self.cost_breakdown[model_key] = 0.0
+        self.cost_breakdown[model_key] += invocation_cost
+
+        self.estimated_cost += invocation_cost
+        if not is_free:
+            self.actual_cost += invocation_cost
+
+    def get_savings_report(self) -> CostSavings:
+        """Generate cost savings report."""
+        savings = self.estimated_cost - self.actual_cost
+
+        return CostSavings(
+            actual_cost=round(self.actual_cost, 6),
+            estimated_paid_cost=round(self.estimated_cost, 6),
+            savings=round(max(0, savings), 6),
+            free_model_invocations=self.free_invocations,
+            paid_model_invocations=self.paid_invocations,
+            total_input_tokens=self.total_input_tokens,
+            total_output_tokens=self.total_output_tokens,
+            cost_breakdown={k: round(v, 6) for k, v in self.cost_breakdown.items()},
+        )
 
 # Configure progress logger for deliberation tracking
 progress_logger = logging.getLogger("ai_counsel.progress")
@@ -492,6 +608,8 @@ The following files are available in the working directory:
         """
         Build context string from previous responses and recent tool results.
 
+        Uses context compression for large multi-round debates when enabled.
+
         Args:
             previous_responses: List of responses from previous rounds
             current_round_num: Current round number (for filtering tool results)
@@ -499,6 +617,35 @@ The following files are available in the working directory:
         Returns:
             Formatted context string
         """
+        # Check if context compression is enabled and needed
+        compression_config = None
+        if (
+            self.config
+            and hasattr(self.config, "deliberation")
+            and hasattr(self.config.deliberation, "context_compression")
+        ):
+            compression_config = self.config.deliberation.context_compression
+
+        if compression_config and compression_config.enabled:
+            from deliberation.compression import ContextCompressor
+
+            compressor = ContextCompressor(
+                compression_threshold=compression_config.compression_threshold,
+                recent_rounds_to_keep=compression_config.recent_rounds_to_keep,
+                max_key_points_per_round=compression_config.max_key_points_per_round,
+                max_rationale_length=compression_config.max_rationale_length,
+            )
+
+            if compressor.needs_compression(previous_responses):
+                result = compressor.compress(previous_responses)
+                context_parts = [result.compressed_context]
+
+                # Add tool results to compressed context
+                self._append_tool_results(context_parts, current_round_num)
+
+                return "\n".join(context_parts)
+
+        # Default behavior: no compression
         context_parts = ["Previous discussion:\n"]
 
         for resp in previous_responses:
@@ -507,53 +654,69 @@ The following files are available in the working directory:
             )
 
         # Add tool results from recent rounds
-        if self.tool_execution_history and current_round_num:
-            # Get config values with defaults
-            max_rounds = (
-                getattr(
-                    getattr(self.config, "deliberation", None),
-                    "tool_context_max_rounds",
-                    2,
-                )
-                if self.config
-                else 2
-            )
-
-            max_chars = (
-                getattr(
-                    getattr(self.config, "deliberation", None),
-                    "tool_output_max_chars",
-                    1000,
-                )
-                if self.config
-                else 1000
-            )
-
-            # Filter to recent N rounds
-            min_round = max(1, current_round_num - max_rounds)
-            recent_tools = [
-                record
-                for record in self.tool_execution_history
-                if record.round_number >= min_round
-            ]
-
-            if recent_tools:
-                context_parts.append("\n## Recent Tool Results\n")
-
-                for record in recent_tools:
-                    context_parts.append(
-                        f"\n**Round {record.round_number} - {record.request.name}** "
-                        f"(requested by {record.requested_by})\n"
-                    )
-
-                    if record.result.success:
-                        # Truncate output to prevent bloat
-                        output = self._truncate_output(record.result.output, max_chars)
-                        context_parts.append(f"```\n{output}\n```\n")
-                    else:
-                        context_parts.append(f"**Error:** {record.result.error}\n")
+        self._append_tool_results(context_parts, current_round_num)
 
         return "\n".join(context_parts)
+
+    def _append_tool_results(
+        self,
+        context_parts: List[str],
+        current_round_num: Optional[int],
+    ) -> None:
+        """
+        Append tool results from recent rounds to context parts.
+
+        Args:
+            context_parts: List to append tool result strings to
+            current_round_num: Current round number for filtering
+        """
+        if not self.tool_execution_history or not current_round_num:
+            return
+
+        # Get config values with defaults
+        max_rounds = (
+            getattr(
+                getattr(self.config, "deliberation", None),
+                "tool_context_max_rounds",
+                2,
+            )
+            if self.config
+            else 2
+        )
+
+        max_chars = (
+            getattr(
+                getattr(self.config, "deliberation", None),
+                "tool_output_max_chars",
+                1000,
+            )
+            if self.config
+            else 1000
+        )
+
+        # Filter to recent N rounds
+        min_round = max(1, current_round_num - max_rounds)
+        recent_tools = [
+            record
+            for record in self.tool_execution_history
+            if record.round_number >= min_round
+        ]
+
+        if recent_tools:
+            context_parts.append("\n## Recent Tool Results\n")
+
+            for record in recent_tools:
+                context_parts.append(
+                    f"\n**Round {record.round_number} - {record.request.name}** "
+                    f"(requested by {record.requested_by})\n"
+                )
+
+                if record.result.success:
+                    # Truncate output to prevent bloat
+                    output = self._truncate_output(record.result.output, max_chars)
+                    context_parts.append(f"```\n{output}\n```\n")
+                else:
+                    context_parts.append(f"**Error:** {record.result.error}\n")
 
     def _parse_vote(self, response_text: str, participant_id: str = "") -> tuple[Optional[Vote], str]:
         """
@@ -731,12 +894,23 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
         Returns:
             VotingResult if any votes found (including abstains), None otherwise
         """
-        from models.schema import RoundVote, VotingResult
+        from models.schema import RoundVote, VotingResult, VoteChange
 
         votes_by_round = []
         raw_tally: dict[str, int] = {}  # Track raw string votes
         all_options = []  # Track unique options for similarity matching
         quality_tracker = get_quality_tracker()
+
+        # Issue #27: Track confidence-weighted votes
+        weighted_tally: dict[str, float] = {}
+
+        # Issue #28: Track abstain votes per model
+        abstain_count = 0
+        model_vote_counts: dict[str, int] = {}
+        model_abstain_counts: dict[str, int] = {}
+
+        # Issue #33: Track vote history per participant for vote change detection
+        vote_history: dict[str, list[tuple[int, str, float, str]]] = {}
 
         for response in responses:
             vote, failure_reason = self._parse_vote(response.response, response.participant)
@@ -777,45 +951,97 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
                 )
                 votes_by_round.append(round_vote)
 
-                # Track raw votes and unique options
-                raw_tally[vote.option] = raw_tally.get(vote.option, 0) + 1
-                if vote.option not in all_options:
-                    all_options.append(vote.option)
+                # Issue #33: Track vote history for vote change detection
+                if response.participant not in vote_history:
+                    vote_history[response.participant] = []
+                vote_history[response.participant].append(
+                    (response.round, vote.option, vote.confidence, vote.rationale)
+                )
+
+                # Issue #28: Track model vote counts for abstain rate
+                model_vote_counts[response.participant] = model_vote_counts.get(response.participant, 0) + 1
+
+                # Issue #28: Check if this is an ABSTAIN vote
+                if vote.option.upper() == "ABSTAIN":
+                    abstain_count += 1
+                    model_abstain_counts[response.participant] = model_abstain_counts.get(response.participant, 0) + 1
+                else:
+                    # Only count non-abstain votes in tally (Issue #28)
+                    raw_tally[vote.option] = raw_tally.get(vote.option, 0) + 1
+
+                    # Issue #27: Confidence-weighted vote aggregation
+                    weighted_tally[vote.option] = weighted_tally.get(vote.option, 0.0) + vote.confidence
+
+                    if vote.option not in all_options:
+                        all_options.append(vote.option)
 
         # If no votes found (even with abstains disabled), return None
         if not votes_by_round:
             return None
 
+        # Issue #33: Detect vote changes between rounds
+        vote_changes = self._detect_vote_changes(vote_history)
+
+        # Issue #33: Calculate vote stability metric
+        vote_stability = self._calculate_vote_stability(vote_history, vote_changes)
+
+        # Issue #28: Calculate abstain rate per model
+        abstain_rate_by_model: dict[str, float] = {}
+        for participant, total_votes in model_vote_counts.items():
+            abstain_votes = model_abstain_counts.get(participant, 0)
+            abstain_rate_by_model[participant] = abstain_votes / total_votes if total_votes > 0 else 0.0
+
         # Group semantically similar options using similarity backend
         # if available, otherwise use exact string matching
         tally = self._group_similar_vote_options(all_options, raw_tally)
 
-        # Determine consensus and winning option
-        if len(tally) == 1:
+        # Issue #27: Group weighted tally similarly
+        grouped_weighted_tally = self._group_similar_vote_options_weighted(all_options, weighted_tally)
+
+        # Determine consensus and winning option (excluding abstains - Issue #28)
+        non_abstain_tally = {k: v for k, v in tally.items() if k.upper() != "ABSTAIN"}
+        if len(non_abstain_tally) == 1:
             # Unanimous vote
             consensus_reached = True
-            winning_option = list(tally.keys())[0]
-        elif len(tally) > 1:
+            winning_option = list(non_abstain_tally.keys())[0]
+        elif len(non_abstain_tally) > 1:
             # Find option with most votes
-            max_votes = max(tally.values())
-            winners = [opt for opt, count in tally.items() if count == max_votes]
+            max_votes = max(non_abstain_tally.values())
+            winners = [opt for opt, count in non_abstain_tally.items() if count == max_votes]
             if len(winners) == 1:
                 # Clear winner
                 consensus_reached = True
                 winning_option = winners[0]
             else:
-                # Tie
-                consensus_reached = False
-                winning_option = None
+                # Tie - use weighted tally as tiebreaker (Issue #27)
+                winner_weights = [(opt, grouped_weighted_tally.get(opt, 0.0)) for opt in winners]
+                winner_weights.sort(key=lambda x: x[1], reverse=True)
+                if len(winner_weights) >= 2 and winner_weights[0][1] > winner_weights[1][1]:
+                    # Weighted tally breaks the tie
+                    consensus_reached = True
+                    winning_option = winner_weights[0][0]
+                    logger.info(
+                        f"Tie broken by weighted tally: {winning_option} "
+                        f"({winner_weights[0][1]:.2f} vs {winner_weights[1][1]:.2f})"
+                    )
+                else:
+                    # Still a tie even with weighted tally
+                    consensus_reached = False
+                    winning_option = None
         else:
             consensus_reached = False
             winning_option = None
 
         return VotingResult(
             final_tally=tally,
+            weighted_tally=grouped_weighted_tally,
             votes_by_round=votes_by_round,
             consensus_reached=consensus_reached,
             winning_option=winning_option,
+            abstain_count=abstain_count,
+            abstain_rate_by_model=abstain_rate_by_model,
+            vote_changes=vote_changes,
+            vote_stability=vote_stability,
         )
 
     def _group_similar_vote_options(
@@ -899,6 +1125,145 @@ Reply with ONLY the VOTE line. Do not repeat your analysis."""
                 exc_info=True,
             )
             return raw_tally
+
+    def _detect_vote_changes(
+        self, vote_history: dict[str, list[tuple[int, str, float, str]]]
+    ) -> List["VoteChange"]:
+        """
+        Detect vote changes between rounds for each participant.
+
+        Args:
+            vote_history: Dict mapping participant to list of (round, option, confidence, rationale)
+
+        Returns:
+            List of VoteChange objects for all detected changes
+        """
+        from models.schema import VoteChange
+
+        vote_changes = []
+
+        for participant, history in vote_history.items():
+            # Sort by round number
+            history_sorted = sorted(history, key=lambda x: x[0])
+
+            # Compare consecutive rounds
+            for i in range(1, len(history_sorted)):
+                prev_round, prev_option, prev_confidence, _ = history_sorted[i - 1]
+                curr_round, curr_option, curr_confidence, curr_rationale = history_sorted[i]
+
+                # Detect if option changed (case-insensitive comparison)
+                if prev_option.upper() != curr_option.upper():
+                    vote_change = VoteChange(
+                        participant=participant,
+                        from_round=prev_round,
+                        to_round=curr_round,
+                        previous_option=prev_option,
+                        new_option=curr_option,
+                        previous_confidence=prev_confidence,
+                        new_confidence=curr_confidence,
+                        reasoning=curr_rationale,
+                    )
+                    vote_changes.append(vote_change)
+
+                    logger.info(
+                        f"Vote change detected: {participant} changed from "
+                        f"'{prev_option}' (round {prev_round}) to "
+                        f"'{curr_option}' (round {curr_round})"
+                    )
+
+        return vote_changes
+
+    def _calculate_vote_stability(
+        self,
+        vote_history: dict[str, list[tuple[int, str, float, str]]],
+        vote_changes: List["VoteChange"],
+    ) -> float:
+        """
+        Calculate vote stability metric.
+
+        Stability = 1.0 - (participants_who_changed / total_participants)
+
+        A stability of 1.0 means no participants changed their vote.
+        A stability of 0.0 means all participants changed their vote.
+
+        Args:
+            vote_history: Dict mapping participant to vote history
+            vote_changes: List of detected vote changes
+
+        Returns:
+            Vote stability metric (0.0-1.0)
+        """
+        if not vote_history:
+            return 1.0
+
+        # Count unique participants who changed their vote
+        participants_who_changed = set(change.participant for change in vote_changes)
+        total_participants = len(vote_history)
+
+        if total_participants == 0:
+            return 1.0
+
+        stability = 1.0 - (len(participants_who_changed) / total_participants)
+        return stability
+
+    def _group_similar_vote_options_weighted(
+        self, all_options: List[str], weighted_tally: Dict[str, float]
+    ) -> Dict[str, float]:
+        """
+        Group semantically similar vote options for weighted tally.
+
+        Similar to _group_similar_vote_options but for float values.
+
+        Args:
+            all_options: List of unique vote option strings
+            weighted_tally: Weighted vote totals keyed by option string
+
+        Returns:
+            Grouped weighted tally dict where similar options are merged
+        """
+        # If only one option or no similarity backend available, return as-is
+        if len(all_options) <= 1 or not self.convergence_detector:
+            return weighted_tally
+
+        try:
+            backend = self.convergence_detector.backend
+            similarity_threshold = 0.85
+
+            # Build groups of similar options
+            groups = []
+            used_options = set()
+
+            for option_a in all_options:
+                if option_a in used_options:
+                    continue
+
+                group = [option_a]
+                used_options.add(option_a)
+
+                for option_b in all_options:
+                    if option_b not in used_options:
+                        similarity = backend.compute_similarity(option_a, option_b)
+                        if similarity >= similarity_threshold:
+                            group.append(option_b)
+                            used_options.add(option_b)
+
+                groups.append((option_a, group))
+
+            # Merge weighted tally by groups
+            grouped_tally = {}
+            for canonical_option, similar_options in groups:
+                total_weight = sum(weighted_tally.get(opt, 0.0) for opt in similar_options)
+                grouped_tally[canonical_option] = total_weight
+
+            return grouped_tally
+
+        except Exception as e:
+            logger.warning(
+                f"Weighted vote option grouping failed: {type(e).__name__}: {e}. "
+                f"Falling back to exact matching.",
+                exc_info=True,
+            )
+            return weighted_tally
 
     def _build_voting_instructions(self) -> str:
         """
@@ -1143,6 +1508,9 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
         # In long-running MCP servers, this prevents unbounded growth across deliberations
         self.tool_execution_history = []
 
+        # Initialize cost tracker for this deliberation
+        cost_tracker = CostTracker()
+
         # Reset convergence detector state from previous deliberations
         # This ensures counters don't carry over and affect convergence detection
         if self.convergence_detector:
@@ -1237,6 +1605,24 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
                     for p in request.participants
                 ]
             all_responses.extend(round_responses)
+
+            # Track cost for this round's responses
+            for r in round_responses:
+                # Skip error responses for cost tracking
+                if r.response.startswith("[ERROR"):
+                    continue
+                # Parse participant to get model and adapter
+                parts = r.participant.split("@")
+                if len(parts) == 2:
+                    model, adapter = parts
+                    # Estimate input as prompt + context (rough estimate)
+                    input_estimate = request.question  # Base prompt
+                    cost_tracker.track_invocation(
+                        adapter_name=adapter,
+                        model=model,
+                        input_text=input_estimate,
+                        output_text=r.response,
+                    )
 
             # Log round completion with model results
             round_elapsed = (datetime.now() - round_start).total_seconds()
@@ -1364,6 +1750,9 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
             except Exception:
                 graph_context_summary = "Decision graph context injected"
 
+        # Generate cost savings report
+        cost_savings_report = cost_tracker.get_savings_report()
+
         # Create result
         result = DeliberationResult(
             status="complete",
@@ -1377,6 +1766,7 @@ TOOL_REQUEST: {"name": "read_file", "arguments": {"path": "src/file.py"}}
             voting_result=voting_result,  # Add voting results
             graph_context_summary=graph_context_summary,  # Add graph context summary
             tool_executions=self.tool_execution_history,  # Add tool execution history
+            cost_savings=cost_savings_report,  # Add cost savings report
         )
 
         # Add convergence info if available

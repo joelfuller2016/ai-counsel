@@ -1,0 +1,217 @@
+# AI Counsel Docker Compose Configuration
+#
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up ai-counsel      # Start only AI Counsel
+#   docker-compose up ollama          # Start Ollama for local models
+#   docker-compose logs -f ai-counsel # Follow logs
+#   docker-compose down               # Stop all services
+#
+# For development:
+#   docker-compose --profile dev up   # Include development tools
+
+version: "3.9"
+
+services:
+  # =============================================================
+  # AI Counsel MCP Server
+  # =============================================================
+  ai-counsel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: ai-counsel:latest
+    container_name: ai-counsel
+    restart: unless-stopped
+
+    # Environment variables
+    environment:
+      # Logging
+      - AI_COUNSEL_LOG_LEVEL=${AI_COUNSEL_LOG_LEVEL:-INFO}
+
+      # API Keys (from .env file or host environment)
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+
+      # Ollama connection (when using local models)
+      - OLLAMA_HOST=http://ollama:11434
+
+      # Database path (inside container)
+      - AI_COUNSEL_DB_PATH=/app/data/decision_graph.db
+
+      # Python settings
+      - PYTHONUNBUFFERED=1
+
+    # Volume mounts
+    volumes:
+      # Configuration (read-only)
+      - ./config.yaml:/app/config.yaml:ro
+
+      # Persistent data
+      - ai-counsel-data:/app/data
+      - ai-counsel-transcripts:/app/transcripts
+
+      # Logs (optional - can also use docker logs)
+      - ai-counsel-logs:/app/logs
+
+    # MCP uses stdio transport, but we can expose a health port
+    ports:
+      - "${AI_COUNSEL_PORT:-8080}:8080"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; from mcp.server import Server; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 4G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+    # Wait for ollama if using local models
+    depends_on:
+      ollama:
+        condition: service_started
+        required: false
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+    networks:
+      - ai-counsel-network
+
+  # =============================================================
+  # Ollama - Local LLM Runtime (Optional)
+  # =============================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ai-counsel-ollama
+    restart: unless-stopped
+    profiles:
+      - ollama
+      - local-models
+
+    # GPU support (uncomment for NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_MODELS=/root/.ollama/models
+
+    volumes:
+      # Persist downloaded models
+      - ollama-models:/root/.ollama/models
+
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 16G
+        reservations:
+          cpus: "1"
+          memory: 4G
+
+    networks:
+      - ai-counsel-network
+
+  # =============================================================
+  # LM Studio API Server (Optional Alternative to Ollama)
+  # =============================================================
+  # Note: LM Studio is a desktop app, this service is for the API server
+  # If you're using LM Studio locally, configure the host in config.yaml
+  # lmstudio:
+  #   image: lmstudio/api:latest  # Not officially available
+  #   profiles:
+  #     - lmstudio
+  #   ...
+
+  # =============================================================
+  # Development Service
+  # =============================================================
+  ai-counsel-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    image: ai-counsel:dev
+    container_name: ai-counsel-dev
+    profiles:
+      - dev
+
+    environment:
+      - AI_COUNSEL_LOG_LEVEL=DEBUG
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - PYTHONUNBUFFERED=1
+
+    volumes:
+      # Mount source code for live development
+      - .:/app
+      - ai-counsel-data:/app/data
+
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+
+    networks:
+      - ai-counsel-network
+
+# =============================================================
+# Named Volumes
+# =============================================================
+volumes:
+  ai-counsel-data:
+    driver: local
+    name: ai-counsel-data
+
+  ai-counsel-transcripts:
+    driver: local
+    name: ai-counsel-transcripts
+
+  ai-counsel-logs:
+    driver: local
+    name: ai-counsel-logs
+
+  ollama-models:
+    driver: local
+    name: ai-counsel-ollama-models
+
+# =============================================================
+# Networks
+# =============================================================
+networks:
+  ai-counsel-network:
+    driver: bridge
+    name: ai-counsel-network

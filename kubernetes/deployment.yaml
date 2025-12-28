@@ -1,0 +1,273 @@
+# AI Counsel Kubernetes Deployment
+# ============================================================
+# Deploys the AI Counsel MCP Server with configurable replicas,
+# resource limits, health checks, and rolling update strategy.
+#
+# Usage:
+#   kubectl apply -f kubernetes/
+#   kubectl get pods -l app=ai-counsel
+#   kubectl logs -f deployment/ai-counsel
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-counsel
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+    version: v1
+    component: mcp-server
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  selector:
+    matchLabels:
+      app: ai-counsel
+
+  template:
+    metadata:
+      labels:
+        app: ai-counsel
+        version: v1
+        component: mcp-server
+      annotations:
+        # Force pod restart when config changes
+        checksum/config: "{{ include (print $.Template.BasePath \"/configmap.yaml\") . | sha256sum }}"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+
+    spec:
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      # Service account for RBAC
+      serviceAccountName: ai-counsel
+
+      # Anti-affinity to spread pods across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - ai-counsel
+                topologyKey: kubernetes.io/hostname
+
+      # Init container to verify config
+      initContainers:
+        - name: config-validator
+          image: ai-counsel:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -c
+            - |
+              from models.config import load_config
+              config = load_config('/app/config/config.yaml')
+              print('Config validation successful')
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+      containers:
+        - name: ai-counsel
+          image: ai-counsel:latest
+          imagePullPolicy: IfNotPresent
+
+          # Container ports
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # Environment variables
+          env:
+            - name: AI_COUNSEL_LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: ai-counsel-config
+                  key: log_level
+
+            - name: AI_COUNSEL_CONFIG_PATH
+              value: /app/config/config.yaml
+
+            - name: AI_COUNSEL_TRANSCRIPTS_DIR
+              value: /app/data/transcripts
+
+            - name: AI_COUNSEL_DB_PATH
+              value: /app/data/decision_graph.db
+
+            # API Keys from secrets
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-counsel-secrets
+                  key: openrouter-api-key
+                  optional: true
+
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-counsel-secrets
+                  key: anthropic-api-key
+                  optional: true
+
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-counsel-secrets
+                  key: openai-api-key
+                  optional: true
+
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-counsel-secrets
+                  key: google-api-key
+                  optional: true
+
+            # Ollama connection (if using in-cluster Ollama)
+            - name: OLLAMA_HOST
+              value: http://ollama-service:11434
+
+          # Resource limits and requests
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+
+          # Volume mounts
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+              readOnly: true
+
+            - name: data-volume
+              mountPath: /app/data
+
+            - name: logs-volume
+              mountPath: /app/logs
+
+            - name: tmp-volume
+              mountPath: /tmp
+
+          # Liveness probe - restart if unhealthy
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "from mcp.server import Server; print('alive')"
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          # Readiness probe - remove from service if not ready
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "from mcp.server import Server; print('ready')"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Startup probe - allow time for initial startup
+          startupProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "from mcp.server import Server; print('started')"
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+          # Security context for the container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+      # Volumes
+      volumes:
+        - name: config-volume
+          configMap:
+            name: ai-counsel-config
+
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: ai-counsel-data
+
+        - name: logs-volume
+          emptyDir: {}
+
+        - name: tmp-volume
+          emptyDir: {}
+
+      # Graceful termination
+      terminationGracePeriodSeconds: 30
+
+      # Restart policy
+      restartPolicy: Always
+
+---
+# PersistentVolumeClaim for data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-counsel-data
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard  # Adjust based on your cluster
+
+---
+# ServiceAccount for RBAC
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-counsel
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel

@@ -2,7 +2,7 @@
 from typing import Type, Union
 
 from adapters.base import BaseCLIAdapter
-from adapters.base_http import BaseHTTPAdapter
+from adapters.base_http import BaseHTTPAdapter, HealthCheckResult
 from adapters.claude import ClaudeAdapter
 from adapters.codex import CodexAdapter
 from adapters.droid import DroidAdapter
@@ -10,7 +10,7 @@ from adapters.gemini import GeminiAdapter
 from adapters.llamacpp import LlamaCppAdapter
 from adapters.lmstudio import LMStudioAdapter
 from adapters.ollama import OllamaAdapter
-from adapters.openrouter import OpenRouterAdapter
+from adapters.openrouter import OpenRouterAdapter, RateLimitError
 from models.config import CLIAdapterConfig, CLIToolConfig, HTTPAdapterConfig
 
 
@@ -109,8 +109,11 @@ __all__ = [
     "CodexAdapter",
     "DroidAdapter",
     "GeminiAdapter",
+    "HealthCheckResult",
     "LlamaCppAdapter",
     "LMStudioAdapter",
     "OllamaAdapter",
+    "OpenRouterAdapter",
+    "RateLimitError",
     "create_adapter",
 ]

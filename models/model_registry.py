@@ -24,6 +24,7 @@ class RegistryEntry:
         default: Whether marked as recommended default for this adapter
         enabled: Whether model is active and available for use
         timeout: Model-specific timeout in seconds (None = use adapter timeout)
+        fallback_models: Ordered list of fallback model IDs (None = no fallbacks)
     """
 
     id: str
@@ -33,6 +34,7 @@ class RegistryEntry:
     default: bool = False
     enabled: bool = True
     timeout: Optional[int] = None
+    fallback_models: Optional[tuple[str, ...]] = None
 
 
 @dataclass
@@ -78,6 +80,11 @@ class ModelRegistry:
                 else:
                     model_def = ModelDefinition.model_validate(model)
 
+                # Convert fallback_models list to tuple for frozen dataclass
+                fallback_tuple = None
+                if model_def.fallback_models:
+                    fallback_tuple = tuple(model_def.fallback_models)
+
                 normalized.append(
                     RegistryEntry(
                         id=model_def.id,
@@ -87,6 +94,7 @@ class ModelRegistry:
                         default=bool(model_def.default),
                         enabled=bool(model_def.enabled),
                         timeout=model_def.timeout,
+                        fallback_models=fallback_tuple,
                     )
                 )
 
@@ -190,6 +198,25 @@ class ModelRegistry:
             if entry.id == model_id:
                 return entry.timeout
         return None
+
+    def get_fallback_models(self, cli: str, model_id: str) -> builtins.list[str]:
+        """Get ordered list of fallback model IDs for a given model.
+
+        Args:
+            cli: Adapter name (e.g., 'openrouter')
+            model_id: Primary model identifier
+
+        Returns:
+            List of fallback model IDs in order of preference,
+            or empty list if no fallbacks configured.
+        """
+        entries = self._entries.get(cli, [])
+        for entry in entries:
+            if entry.id == model_id:
+                if entry.fallback_models:
+                    return builtins.list(entry.fallback_models)
+                return []
+        return []
 
     def validate_model(
         self, cli: str, model_id: str, max_suggestions: int = 3

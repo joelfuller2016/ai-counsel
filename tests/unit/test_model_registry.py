@@ -594,3 +594,168 @@ def test_model_validation_result_defaults():
     assert result.enabled is None
     assert result.similar_models == []
     assert result.error_message is None
+
+
+# ============================================================================
+# Tests for fallback_models feature (GitHub Issue #11)
+# ============================================================================
+
+
+@pytest.fixture
+def config_with_fallback_models() -> Config:
+    """Create a config with fallback models configured."""
+    return _minimal_config(
+        {
+            "test_adapter": [
+                {
+                    "id": "primary-model",
+                    "label": "Primary Model",
+                    "enabled": True,
+                    "default": True,
+                    "fallback_models": ["fallback-1", "fallback-2", "fallback-3"],
+                },
+                {
+                    "id": "fallback-1",
+                    "label": "Fallback 1",
+                    "enabled": True,
+                    "fallback_models": ["fallback-2"],
+                },
+                {
+                    "id": "fallback-2",
+                    "label": "Fallback 2",
+                    "enabled": True,
+                    # No fallback_models - tests None case
+                },
+                {
+                    "id": "fallback-3",
+                    "label": "Fallback 3",
+                    "enabled": True,
+                    "fallback_models": [],  # Empty list
+                },
+            ]
+        }
+    )
+
+
+def test_get_fallback_models_returns_configured_list(
+    config_with_fallback_models: Config,
+):
+    """Test that get_fallback_models returns the configured fallback list."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    fallbacks = registry.get_fallback_models("test_adapter", "primary-model")
+
+    assert fallbacks == ["fallback-1", "fallback-2", "fallback-3"]
+
+
+def test_get_fallback_models_returns_empty_for_no_fallbacks(
+    config_with_fallback_models: Config,
+):
+    """Test that get_fallback_models returns empty list when no fallbacks configured."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    # Model with no fallback_models field (None)
+    fallbacks = registry.get_fallback_models("test_adapter", "fallback-2")
+    assert fallbacks == []
+
+
+def test_get_fallback_models_returns_empty_for_empty_list(
+    config_with_fallback_models: Config,
+):
+    """Test that get_fallback_models returns empty list for empty fallback_models."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    # Model with empty fallback_models list
+    fallbacks = registry.get_fallback_models("test_adapter", "fallback-3")
+    assert fallbacks == []
+
+
+def test_get_fallback_models_returns_empty_for_nonexistent_model(
+    config_with_fallback_models: Config,
+):
+    """Test that get_fallback_models returns empty list for non-existent model."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    fallbacks = registry.get_fallback_models("test_adapter", "nonexistent-model")
+    assert fallbacks == []
+
+
+def test_get_fallback_models_returns_empty_for_nonexistent_adapter(
+    config_with_fallback_models: Config,
+):
+    """Test that get_fallback_models returns empty list for non-existent adapter."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    fallbacks = registry.get_fallback_models("nonexistent-adapter", "primary-model")
+    assert fallbacks == []
+
+
+def test_fallback_models_stored_as_tuple_in_registry_entry(
+    config_with_fallback_models: Config,
+):
+    """Test that fallback_models is stored as a tuple in RegistryEntry."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    models = registry.get_all_models("test_adapter")
+    primary = next(m for m in models if m.id == "primary-model")
+
+    # Should be stored as tuple (frozen dataclass requirement)
+    assert isinstance(primary.fallback_models, tuple)
+    assert primary.fallback_models == ("fallback-1", "fallback-2", "fallback-3")
+
+
+def test_fallback_models_none_for_model_without_config(
+    config_with_fallback_models: Config,
+):
+    """Test that fallback_models is None when not configured."""
+    registry = ModelRegistry(config_with_fallback_models)
+
+    models = registry.get_all_models("test_adapter")
+    fallback2 = next(m for m in models if m.id == "fallback-2")
+
+    assert fallback2.fallback_models is None
+
+
+def test_get_fallback_models_with_single_fallback():
+    """Test get_fallback_models with a single fallback configured."""
+    config = _minimal_config(
+        {
+            "test_adapter": [
+                {
+                    "id": "single-fallback-model",
+                    "label": "Model with Single Fallback",
+                    "enabled": True,
+                    "fallback_models": ["backup-model"],
+                },
+            ]
+        }
+    )
+    registry = ModelRegistry(config)
+
+    fallbacks = registry.get_fallback_models("test_adapter", "single-fallback-model")
+
+    assert fallbacks == ["backup-model"]
+    assert len(fallbacks) == 1
+
+
+def test_fallback_models_preserves_order():
+    """Test that fallback model order is preserved."""
+    config = _minimal_config(
+        {
+            "test_adapter": [
+                {
+                    "id": "ordered-model",
+                    "label": "Ordered Model",
+                    "enabled": True,
+                    "fallback_models": ["first", "second", "third", "fourth"],
+                },
+            ]
+        }
+    )
+    registry = ModelRegistry(config)
+
+    fallbacks = registry.get_fallback_models("test_adapter", "ordered-model")
+
+    assert fallbacks == ["first", "second", "third", "fourth"]
+    assert fallbacks[0] == "first"
+    assert fallbacks[-1] == "fourth"

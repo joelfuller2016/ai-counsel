@@ -1,0 +1,203 @@
+# AI Counsel Kubernetes ConfigMap
+# ============================================================
+# Contains configuration for the AI Counsel MCP Server.
+# Includes the full config.yaml and environment settings.
+#
+# Usage:
+#   kubectl apply -f kubernetes/configmap.yaml
+#   kubectl get configmap ai-counsel-config -n ai-counsel -o yaml
+#
+# To update config:
+#   kubectl create configmap ai-counsel-config --from-file=config.yaml -n ai-counsel --dry-run=client -o yaml | kubectl apply -f -
+# ============================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-counsel-config
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+    component: config
+data:
+  # Environment configuration
+  log_level: "INFO"
+
+  # Main configuration file
+  config.yaml: |
+    # ai-counsel/config.yaml
+    version: "1.0"
+
+    cli_tools:
+      claude:
+        command: "claude"
+        args:
+          [
+            "-p",
+            "--model",
+            "{model}",
+            "--settings",
+            '{"disableAllHooks": true}',
+            "{prompt}",
+          ]
+        timeout: 300
+
+      codex:
+        command: "codex"
+        args:
+          [
+            "exec",
+            "--skip-git-repo-check",
+            "--sandbox",
+            "workspace-write",
+            "--model",
+            "{model}",
+            "-c",
+            'model_reasoning_effort="{reasoning_effort}"',
+            "{prompt}",
+          ]
+        timeout: 300
+        default_reasoning_effort: "medium"
+
+      droid:
+        command: "droid"
+        args: ["exec", "-m", "{model}", "-r", "{reasoning_effort}", "{prompt}"]
+        timeout: 300
+        default_reasoning_effort: "medium"
+
+      gemini:
+        command: "gemini"
+        args:
+          [
+            "-m",
+            "{model}",
+            "-p",
+            "{prompt}",
+          ]
+        timeout: 300
+
+    # HTTP Adapters Section
+    adapters:
+      ollama:
+        type: http
+        base_url: "${OLLAMA_HOST:-http://localhost:11434}"
+        timeout: 300
+        max_retries: 3
+
+      lmstudio:
+        type: http
+        base_url: "http://localhost:1234"
+        timeout: 300
+        max_retries: 3
+
+      openrouter:
+        type: http
+        base_url: "https://openrouter.ai/api/v1"
+        api_key: "${OPENROUTER_API_KEY}"
+        timeout: 300
+        max_retries: 3
+
+    defaults:
+      mode: "quick"
+      rounds: 2
+      max_rounds: 5
+      timeout_per_round: 120
+
+    model_registry:
+      claude:
+        - id: "claude-opus-4-5-20251101"
+          label: "Claude Opus 4.5"
+          tier: "premium"
+          default: true
+          enabled: true
+          timeout: 300
+        - id: "claude-sonnet-4-5-20250929"
+          label: "Claude Sonnet 4.5"
+          tier: "balanced"
+          enabled: true
+        - id: "claude-haiku-4-5-20251001"
+          label: "Claude Haiku 4.5"
+          tier: "speed"
+          enabled: true
+
+      codex:
+        - id: "gpt-5.2-codex"
+          label: "GPT-5.2 Codex"
+          tier: "flagship"
+          default: true
+          enabled: true
+
+      openrouter:
+        - id: "anthropic/claude-sonnet-4"
+          label: "Claude Sonnet 4 (OpenRouter)"
+          tier: "premium"
+          default: true
+          enabled: true
+        - id: "openai/gpt-4o"
+          label: "GPT-4o (OpenRouter)"
+          tier: "balanced"
+          enabled: true
+
+    storage:
+      transcripts_dir: "/app/data/transcripts"
+      format: "markdown"
+      auto_export: true
+
+    mcp:
+      max_rounds_in_response: 3
+
+    deliberation:
+      convergence_detection:
+        enabled: true
+        semantic_similarity_threshold: 0.85
+        divergence_threshold: 0.40
+        min_rounds_before_check: 1
+        consecutive_stable_rounds: 2
+
+      early_stopping:
+        enabled: true
+        threshold: 0.66
+        respect_min_rounds: true
+
+      file_tree:
+        enabled: true
+        max_depth: 2
+        max_files: 50
+
+      tool_security:
+        exclude_patterns:
+          - "transcripts/"
+          - "transcripts/**"
+          - ".git/"
+          - ".git/**"
+          - "node_modules/"
+          - "node_modules/**"
+        max_file_size_bytes: 1048576
+
+      vote_retry:
+        enabled: true
+        max_retries: 1
+        min_response_length: 100
+
+    decision_graph:
+      enabled: true
+      db_path: "/app/data/decision_graph.db"
+      context_token_budget: 1000
+      tier_boundaries:
+        strong: 0.75
+        moderate: 0.60
+      query_window: 1000
+      query_cache_size: 200
+      embedding_cache_size: 500
+      query_ttl: 300
+      noise_floor: 0.40
+
+---
+# Namespace for AI Counsel
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-counsel
+  labels:
+    app: ai-counsel
+    istio-injection: disabled  # Enable if using Istio

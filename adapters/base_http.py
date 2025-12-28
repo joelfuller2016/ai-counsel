@@ -2,10 +2,12 @@
 import asyncio
 import json
 import logging
+import random
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import httpx
 from tenacity import (retry, retry_if_exception, stop_after_attempt,
@@ -25,6 +27,25 @@ if not progress_logger.handlers:
     ))
     progress_logger.addHandler(progress_handler)
     progress_logger.setLevel(logging.DEBUG)
+
+
+@dataclass
+class HealthCheckResult:
+    """Result of a health check for an adapter/model combination.
+
+    Attributes:
+        available: Whether the model is available and responding
+        latency_ms: Response latency in milliseconds (None if check failed)
+        error: Error message if health check failed (None if successful)
+        model: The model identifier that was checked
+        adapter: The adapter name that was checked
+    """
+
+    available: bool
+    latency_ms: Optional[float] = None
+    error: Optional[str] = None
+    model: Optional[str] = None
+    adapter: Optional[str] = None
 
 
 def is_retryable_http_error(exception):
@@ -173,6 +194,92 @@ class BaseHTTPAdapter(ABC):
         """
         pass
 
+    async def health_check(
+        self, model: str, timeout: Optional[float] = None
+    ) -> HealthCheckResult:
+        """
+        Check if a model is available and responding.
+
+        Sends a minimal request to verify the model can respond. This is useful
+        for checking model availability before starting a deliberation, especially
+        for free-tier models that may have rate limits or availability issues.
+
+        Subclasses can override this method to implement provider-specific health
+        checks (e.g., using a dedicated /models endpoint or /health endpoint).
+
+        Default implementation sends a minimal prompt and checks for a valid response.
+
+        Args:
+            model: Model identifier to check
+            timeout: Optional timeout in seconds (defaults to 10s for health checks)
+
+        Returns:
+            HealthCheckResult with availability status, latency, and any errors
+        """
+        check_timeout = timeout if timeout is not None else 10.0
+        start_time = datetime.now()
+
+        try:
+            # Build a minimal health check request
+            endpoint, headers, body = self.build_request(model, "Hi")
+            # Override max_tokens to get fastest possible response
+            if "max_tokens" in body:
+                body["max_tokens"] = 1
+
+            full_url = f"{self.base_url}{endpoint}"
+
+            async with httpx.AsyncClient(timeout=check_timeout) as client:
+                response = await client.post(full_url, headers=headers, json=body)
+                response.raise_for_status()
+
+            latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+
+            return HealthCheckResult(
+                available=True,
+                latency_ms=latency_ms,
+                model=model,
+                adapter=self.ADAPTER_NAME,
+            )
+
+        except httpx.HTTPStatusError as e:
+            latency_ms = (datetime.now() - start_time).total_seconds() * 1000
+            error_msg = f"HTTP {e.response.status_code}"
+
+            # Try to extract error details from response
+            try:
+                error_body = e.response.json()
+                if "error" in error_body:
+                    if isinstance(error_body["error"], dict):
+                        error_msg = f"{error_msg}: {error_body['error'].get('message', str(error_body['error']))}"
+                    else:
+                        error_msg = f"{error_msg}: {error_body['error']}"
+            except Exception:
+                pass
+
+            return HealthCheckResult(
+                available=False,
+                latency_ms=latency_ms,
+                error=error_msg,
+                model=model,
+                adapter=self.ADAPTER_NAME,
+            )
+
+        except httpx.TimeoutException:
+            return HealthCheckResult(
+                available=False,
+                error=f"Timeout after {check_timeout}s",
+                model=model,
+                adapter=self.ADAPTER_NAME,
+            )
+
+        except Exception as e:
+            return HealthCheckResult(
+                available=False,
+                error=f"{type(e).__name__}: {str(e)}",
+                model=model,
+                adapter=self.ADAPTER_NAME,
+            )
+
     async def invoke(
         self,
         prompt: str,
@@ -262,6 +369,109 @@ class BaseHTTPAdapter(ABC):
             elapsed = (datetime.now() - start_time).total_seconds()
             progress_logger.error(f"[ERROR] HTTP REQUEST FAILED | Model: {model} | Time: {elapsed:.2f}s | Error: {type(e).__name__}: {str(e)[:200]}")
             raise
+
+    async def invoke_with_fallback(
+        self,
+        prompt: str,
+        model: str,
+        fallback_models: List[str],
+        context: Optional[str] = None,
+        is_deliberation: bool = True,
+        working_directory: Optional[str] = None,
+        reasoning_effort: Optional[str] = None,
+        timeout_override: Optional[int] = None,
+    ) -> str:
+        """
+        Invoke the HTTP API with fallback chain support.
+
+        Attempts the primary model first. If it fails with a retryable error
+        (timeout, rate limit, server error), tries each fallback model in order.
+        Stops and returns the response from the first successful model.
+
+        Args:
+            prompt: The prompt to send to the model
+            model: Primary model identifier
+            fallback_models: Ordered list of fallback model IDs to try on failure
+            context: Optional additional context to prepend to prompt
+            is_deliberation: Whether this is part of a deliberation
+            working_directory: Unused for HTTP adapters
+            reasoning_effort: Unused for HTTP adapters
+            timeout_override: Optional model-specific timeout in seconds
+
+        Returns:
+            Parsed response from the first successful model (primary or fallback)
+
+        Raises:
+            Exception: If all models (primary + fallbacks) fail, raises the last error
+        """
+        all_models = [model] + list(fallback_models)
+        last_error: Optional[Exception] = None
+
+        for idx, current_model in enumerate(all_models):
+            is_fallback = idx > 0
+            model_type = "FALLBACK" if is_fallback else "PRIMARY"
+
+            if is_fallback:
+                progress_logger.warning(
+                    f"[FALLBACK] Trying fallback model {idx}/{len(fallback_models)}: "
+                    f"{current_model} (after {type(last_error).__name__})"
+                )
+
+            try:
+                result = await self.invoke(
+                    prompt=prompt,
+                    model=current_model,
+                    context=context,
+                    is_deliberation=is_deliberation,
+                    working_directory=working_directory,
+                    reasoning_effort=reasoning_effort,
+                    timeout_override=timeout_override,
+                )
+
+                if is_fallback:
+                    progress_logger.info(
+                        f"[FALLBACK_SUCCESS] Model {current_model} succeeded "
+                        f"(fallback {idx}/{len(fallback_models)})"
+                    )
+
+                return result
+
+            except (TimeoutError, httpx.HTTPStatusError, httpx.NetworkError, httpx.ConnectError, httpx.TimeoutException) as e:
+                last_error = e
+
+                # Log the failure
+                error_msg = str(e)[:100]
+                if isinstance(e, httpx.HTTPStatusError):
+                    error_msg = f"HTTP {e.response.status_code}"
+
+                progress_logger.warning(
+                    f"[{model_type}_FAILED] Model {current_model} failed: {error_msg}"
+                )
+
+                # If this was the last model, re-raise
+                if idx == len(all_models) - 1:
+                    progress_logger.error(
+                        f"[FALLBACK_EXHAUSTED] All {len(all_models)} models failed. "
+                        f"Primary: {model}, Fallbacks: {fallback_models}"
+                    )
+                    raise
+
+                # Otherwise, continue to next fallback
+                continue
+
+            except Exception as e:
+                # Non-retryable error (e.g., ValueError for prompt too long)
+                # Don't try fallbacks for these
+                progress_logger.error(
+                    f"[{model_type}_ERROR] Non-retryable error for {current_model}: "
+                    f"{type(e).__name__}: {str(e)[:100]}"
+                )
+                raise
+
+        # Should never reach here, but just in case
+        if last_error:
+            raise last_error
+        raise RuntimeError("No models to try")
 
     async def _execute_request_with_retry(
         self, url: str, headers: dict[str, str], body: dict, timeout: Optional[int] = None

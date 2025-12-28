@@ -1,0 +1,114 @@
+# AI Counsel Kubernetes Service
+# ============================================================
+# Exposes the AI Counsel MCP Server within the cluster.
+# Includes ClusterIP service and optional LoadBalancer/Ingress.
+#
+# Usage:
+#   kubectl apply -f kubernetes/service.yaml
+#   kubectl get svc -n ai-counsel
+# ============================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-counsel
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+    component: mcp-server
+  annotations:
+    # Prometheus service discovery
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+spec:
+  type: ClusterIP
+
+  selector:
+    app: ai-counsel
+
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+
+  # Session affinity for consistent routing (optional)
+  sessionAffinity: None
+
+---
+# Headless service for StatefulSet scenarios (if needed)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-counsel-headless
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+    component: mcp-server
+spec:
+  type: ClusterIP
+  clusterIP: None
+
+  selector:
+    app: ai-counsel
+
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+
+---
+# Optional: LoadBalancer service for external access
+# Uncomment if you need external access without an Ingress controller
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: ai-counsel-lb
+#   namespace: ai-counsel
+#   labels:
+#     app: ai-counsel
+#   annotations:
+#     # Cloud provider specific annotations
+#     # AWS: service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+#     # GCP: cloud.google.com/load-balancer-type: "Internal"
+# spec:
+#   type: LoadBalancer
+#   selector:
+#     app: ai-counsel
+#   ports:
+#     - name: http
+#       port: 80
+#       targetPort: 8080
+#       protocol: TCP
+
+---
+# Optional: Ingress for HTTP(S) routing
+# Requires an Ingress controller (nginx, traefik, etc.)
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: ai-counsel-ingress
+#   namespace: ai-counsel
+#   labels:
+#     app: ai-counsel
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     cert-manager.io/cluster-issuer: letsencrypt-prod
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+# spec:
+#   tls:
+#     - hosts:
+#         - ai-counsel.example.com
+#       secretName: ai-counsel-tls
+#   rules:
+#     - host: ai-counsel.example.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 name: ai-counsel
+#                 port:
+#                   number: 80

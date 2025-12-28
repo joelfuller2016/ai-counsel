@@ -97,9 +97,35 @@ def truncate_debate_rounds(result: DeliberationResult, max_rounds: int = 3) -> d
 app = Server("ai-counsel")
 
 
-# Load configuration from project directory
+# Load configuration from project directory with live reload support
+config_path = PROJECT_DIR / "config.yaml"
+
+
+def _create_adapters_from_config(cfg):
+    """Create adapters from configuration."""
+    new_adapters = {}
+    adapter_sources_local: list[tuple[str, dict]] = []
+
+    if hasattr(cfg, "adapters") and cfg.adapters:
+        adapter_sources_local.append(("adapters", cfg.adapters))
+
+    if hasattr(cfg, "cli_tools") and cfg.cli_tools:
+        adapter_sources_local.append(("cli_tools", cfg.cli_tools))
+
+    for source_name, adapter_configs in adapter_sources_local:
+        for cli_name, cli_config in adapter_configs.items():
+            if cli_name in new_adapters:
+                continue
+            try:
+                new_adapters[cli_name] = create_adapter(cli_name, cli_config)
+                logger.info(f"Initialized adapter: {cli_name} (from {source_name})")
+            except Exception as e:
+                logger.error(f"Failed to create adapter for {cli_name}: {e}")
+
+    return new_adapters
+
+
 try:
-    config_path = PROJECT_DIR / "config.yaml"
     logger.info(f"Loading config from: {config_path}")
     config = load_config(str(config_path))
     logger.info("Configuration loaded successfully")
@@ -108,36 +134,58 @@ except Exception as e:
     raise
 
 
+# Initialize config watcher for live reload
+config_watcher = None
+try:
+    from models.config_watcher import ConfigWatcher, ConfigChangeEvent
+
+    def _on_config_change(event: ConfigChangeEvent):
+        """Handle configuration changes."""
+        global config, model_registry, adapters, engine
+
+        logger.info(f"Config change detected, updating: {event.changed_sections}")
+
+        # Update global config
+        config = event.new_config
+
+        # Rebuild model registry if model_registry changed
+        if "model_registry" in event.changed_sections:
+            model_registry = ModelRegistry(config)
+            logger.info("Model registry rebuilt from new config")
+
+        # Rebuild adapters if adapters/cli_tools changed
+        if "adapters" in event.changed_sections or "cli_tools" in event.changed_sections:
+            adapters = _create_adapters_from_config(config)
+            # Recreate engine with new adapters
+            engine = DeliberationEngine(
+                adapters=adapters,
+                config=config,
+                server_dir=WORK_DIR,
+                model_registry=model_registry,
+            )
+            logger.info("Adapters and engine rebuilt from new config")
+
+        # Log other section changes
+        for section in event.changed_sections:
+            if section not in ["model_registry", "adapters", "cli_tools"]:
+                logger.info(f"Config section '{section}' updated (effective on next use)")
+
+    config_watcher = ConfigWatcher(str(config_path))
+    config_watcher.add_listener(_on_config_change)
+    config_watcher.start()
+    logger.info("Config watcher started for live reload")
+except ImportError:
+    logger.info("watchdog not installed, live config reload disabled")
+except Exception as e:
+    logger.warning(f"Failed to start config watcher: {e}")
+
+
 model_registry = ModelRegistry(config)
 session_defaults: dict[str, str] = {}
 
 
-# Create adapters - prefer new 'adapters' section, fallback to legacy 'cli_tools'
-adapters = {}
-adapter_sources: list[tuple[str, dict[str, CLIToolConfig | AdapterConfig]]] = []
-
-# Try new adapters section first (preferred)
-if hasattr(config, "adapters") and config.adapters:
-    adapter_sources.append(("adapters", config.adapters))  # type: ignore[arg-type]
-
-# Fallback to legacy cli_tools for backward compatibility
-if hasattr(config, "cli_tools") and config.cli_tools:
-    adapter_sources.append(("cli_tools", config.cli_tools))  # type: ignore[arg-type]
-
-for source_name, adapter_configs in adapter_sources:
-    for cli_name, cli_config in adapter_configs.items():
-        # Skip if already loaded from preferred source
-        if cli_name in adapters:
-            logger.debug(
-                f"Adapter '{cli_name}' already loaded from preferred source, skipping {source_name}"
-            )
-            continue
-
-        try:
-            adapters[cli_name] = create_adapter(cli_name, cli_config)
-            logger.info(f"Initialized adapter: {cli_name} (from {source_name})")
-        except Exception as e:
-            logger.error(f"Failed to create adapter for {cli_name}: {e}")
+# Create adapters using helper function
+adapters = _create_adapters_from_config(config)
 
 
 # Create engine with config for convergence detection and model registry for per-model timeouts
@@ -475,6 +523,23 @@ async def list_tools() -> list[Tool]:
         )
     )
 
+    # Add reload_config tool for manual config refresh
+    tools.append(
+        Tool(
+            name="reload_config",
+            description=(
+                "Manually trigger a configuration reload from config.yaml. "
+                "Useful when automatic file watching is not available or to force an immediate reload. "
+                "Returns details about which sections were updated."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
+        )
+    )
+
     return tools
 
 
@@ -500,6 +565,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return await handle_query_decisions(arguments)
     if name == "get_quality_metrics":
         return await handle_get_quality_metrics(arguments)
+    if name == "reload_config":
+        return await handle_reload_config(arguments)
     elif name != "deliberate":
         error_msg = f"Unknown tool: {name}"
         logger.error(error_msg)
@@ -993,11 +1060,91 @@ async def handle_get_quality_metrics(arguments: dict) -> list[TextContent]:
         return [TextContent(type="text", text=json.dumps(error_response, indent=2))]
 
 
+async def handle_reload_config(arguments: dict) -> list[TextContent]:
+    """Handle reload_config tool call for manual config refresh."""
+    global config, model_registry, adapters, engine
+
+    try:
+        # Load new config
+        old_config = config
+        new_config = load_config(str(config_path))
+
+        # Detect changes
+        changed_sections = []
+        if old_config.adapters != new_config.adapters:
+            changed_sections.append("adapters")
+        if old_config.cli_tools != new_config.cli_tools:
+            changed_sections.append("cli_tools")
+        if old_config.defaults != new_config.defaults:
+            changed_sections.append("defaults")
+        if old_config.model_registry != new_config.model_registry:
+            changed_sections.append("model_registry")
+        if old_config.storage != new_config.storage:
+            changed_sections.append("storage")
+        if old_config.deliberation != new_config.deliberation:
+            changed_sections.append("deliberation")
+        if old_config.decision_graph != new_config.decision_graph:
+            changed_sections.append("decision_graph")
+
+        # Apply changes
+        config = new_config
+
+        # Rebuild components if needed
+        if "model_registry" in changed_sections:
+            model_registry = ModelRegistry(config)
+            logger.info("Model registry rebuilt from new config")
+
+        if "adapters" in changed_sections or "cli_tools" in changed_sections:
+            adapters = _create_adapters_from_config(config)
+            engine = DeliberationEngine(
+                adapters=adapters,
+                config=config,
+                server_dir=WORK_DIR,
+                model_registry=model_registry,
+            )
+            logger.info("Adapters and engine rebuilt from new config")
+
+        response = {
+            "status": "success",
+            "changed_sections": changed_sections,
+            "message": f"Configuration reloaded. {len(changed_sections)} section(s) changed.",
+        }
+        logger.info(f"Manual config reload complete: {changed_sections}")
+
+        return [TextContent(type="text", text=json.dumps(response, indent=2))]
+
+    except FileNotFoundError as e:
+        logger.error(f"Config file not found during reload: {e}")
+        error_response = {
+            "error": str(e),
+            "error_type": "FileNotFoundError",
+            "status": "failed",
+        }
+        return [TextContent(type="text", text=json.dumps(error_response, indent=2))]
+    except Exception as e:
+        logger.error(
+            f"Error in reload_config: {type(e).__name__}: {e}", exc_info=True
+        )
+        error_response = {
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "status": "failed",
+            "message": "Config reload failed, previous configuration retained.",
+        }
+        return [TextContent(type="text", text=json.dumps(error_response, indent=2))]
+
+
 async def main():
     """Run the MCP server."""
     logger.info("Starting AI Counsel MCP Server...")
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(read_stream, write_stream, app.create_initialization_options())
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(read_stream, write_stream, app.create_initialization_options())
+    finally:
+        # Cleanup config watcher on shutdown
+        if config_watcher:
+            config_watcher.stop()
+            logger.info("Config watcher stopped on shutdown")
 
 
 if __name__ == "__main__":

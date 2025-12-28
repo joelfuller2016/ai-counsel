@@ -84,7 +84,7 @@ class Vote(BaseModel):
     """Model for an individual vote with confidence and rationale."""
 
     option: str = Field(
-        ..., description="The voting option (e.g., 'Option A', 'Yes', 'Approve')"
+        ..., description="The voting option (e.g., 'Option A', 'Yes', 'Approve', 'ABSTAIN')"
     )
     confidence: float = Field(
         ..., ge=0.0, le=1.0, description="Confidence level in this vote (0.0-1.0)"
@@ -105,16 +105,51 @@ class RoundVote(BaseModel):
     timestamp: str = Field(..., description="ISO 8601 timestamp when vote was cast")
 
 
+class VoteChange(BaseModel):
+    """Model for tracking a vote change between rounds."""
+
+    participant: str = Field(..., description="Participant identifier")
+    from_round: int = Field(..., description="Round number of the previous vote")
+    to_round: int = Field(..., description="Round number of the new vote")
+    previous_option: str = Field(..., description="Previous vote option")
+    new_option: str = Field(..., description="New vote option")
+    previous_confidence: float = Field(..., description="Previous confidence level")
+    new_confidence: float = Field(..., description="New confidence level")
+    reasoning: Optional[str] = Field(
+        default=None, description="Explanation for the vote change (from new rationale)"
+    )
+
+
 class VotingResult(BaseModel):
     """Model for aggregated voting results across all rounds."""
 
     final_tally: Dict[str, int] = Field(..., description="Final vote counts by option")
+    weighted_tally: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Confidence-weighted vote totals by option (sum of confidence scores)"
+    )
     votes_by_round: List[RoundVote] = Field(
         ..., description="All votes organized by round"
     )
     consensus_reached: bool = Field(..., description="Whether voting reached consensus")
     winning_option: Optional[str] = Field(
         ..., description="The winning option (None if tie or no consensus)"
+    )
+    abstain_count: int = Field(
+        default=0,
+        description="Number of ABSTAIN votes (not counted in majority calculation)"
+    )
+    abstain_rate_by_model: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Abstain rate (0.0-1.0) for each model participant"
+    )
+    vote_changes: List[VoteChange] = Field(
+        default_factory=list,
+        description="List of vote changes detected between rounds"
+    )
+    vote_stability: float = Field(
+        default=1.0,
+        description="Vote stability metric (0.0-1.0): 1.0 = no changes, 0.0 = all votes changed"
     )
 
 
@@ -173,6 +208,56 @@ class ConvergenceInfo(BaseModel):
     )
 
 
+
+
+class CostSavings(BaseModel):
+    """Cost savings report for free model deliberations.
+
+    Tracks estimated costs that would have been incurred if paid models
+    were used instead of free/local models. This helps quantify the
+    value of running deliberations with free models.
+    """
+
+    actual_cost: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Actual cost incurred (0 for free models)",
+    )
+    estimated_paid_cost: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Estimated cost if paid models were used",
+    )
+    savings: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Cost savings (estimated_paid_cost - actual_cost)",
+    )
+    free_model_invocations: int = Field(
+        default=0,
+        ge=0,
+        description="Number of invocations using free models",
+    )
+    paid_model_invocations: int = Field(
+        default=0,
+        ge=0,
+        description="Number of invocations using paid models",
+    )
+    total_input_tokens: int = Field(
+        default=0,
+        ge=0,
+        description="Estimated total input tokens across all invocations",
+    )
+    total_output_tokens: int = Field(
+        default=0,
+        ge=0,
+        description="Estimated total output tokens across all invocations",
+    )
+    cost_breakdown: Dict[str, float] = Field(
+        default_factory=dict,
+        description="Cost breakdown by model (model_id -> estimated_cost)",
+    )
+
 class DeliberationResult(BaseModel):
     """Model for complete deliberation result."""
 
@@ -199,3 +284,8 @@ class DeliberationResult(BaseModel):
         default_factory=list,
         description="List of tool executions during deliberation (evidence-based deliberation)",
     )
+    cost_savings: Optional[CostSavings] = Field(
+        None,
+        description="Cost savings report for free model deliberations (None if cost tracking disabled)",
+    )
+

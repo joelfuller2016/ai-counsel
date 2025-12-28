@@ -1169,8 +1169,13 @@ class TestVoteGrouping:
                 assert "Option D" in result.voting_result.final_tally
                 assert result.voting_result.final_tally["Option A"] == 1
                 assert result.voting_result.final_tally["Option D"] == 1
-                assert result.voting_result.consensus_reached is False  # 1-1 is tie
-                assert result.voting_result.winning_option is None
+                # Issue #27: Ties are now broken by weighted tally (confidence scores)
+                # Option D has confidence 0.95 vs Option A's 0.94, so Option D wins
+                assert result.voting_result.consensus_reached is True  # Tie broken by weighted tally
+                assert result.voting_result.winning_option == "Option D"  # Higher confidence wins
+                # Verify weighted tally is populated
+                assert result.voting_result.weighted_tally["Option A"] == 0.94
+                assert result.voting_result.weighted_tally["Option D"] == 0.95
             elif len(result.voting_result.final_tally) == 1:
                 # If threshold is still aggressive (0.70), A and D would merge
                 # This test documents the bug

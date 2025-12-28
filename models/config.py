@@ -144,6 +144,14 @@ class ModelDefinition(BaseModel):
             "Useful for reasoning models that require longer response times."
         ),
     )
+    fallback_models: Optional[List[str]] = Field(
+        None,
+        description=(
+            "Ordered list of fallback model IDs to try if this model fails. "
+            "Used for reliability with free/rate-limited models. "
+            "Example: ['meta-llama/llama-3.3-70b-instruct:free', 'mistralai/devstral-2:free']"
+        ),
+    )
 
 
 class StorageConfig(BaseModel):
@@ -256,6 +264,43 @@ class VoteRetryConfig(BaseModel):
     )
 
 
+class ContextCompressionConfig(BaseModel):
+    """Configuration for context compression in large multi-round debates.
+
+    When context exceeds the token threshold, older rounds are summarized
+    to preserve key points and voting history while reducing context size.
+    """
+
+    enabled: bool = Field(
+        default=True,
+        description="Enable context compression for large debates",
+    )
+    compression_threshold: int = Field(
+        default=8000,
+        ge=1000,
+        le=100000,
+        description="Token threshold to trigger compression",
+    )
+    recent_rounds_to_keep: int = Field(
+        default=2,
+        ge=1,
+        le=10,
+        description="Number of recent rounds to keep in full (not summarized)",
+    )
+    max_key_points_per_round: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum key points to extract per summarized round",
+    )
+    max_rationale_length: int = Field(
+        default=100,
+        ge=20,
+        le=500,
+        description="Maximum characters for vote rationales in summaries",
+    )
+
+
 class DeliberationConfig(BaseModel):
     """Deliberation engine configuration."""
 
@@ -285,6 +330,10 @@ class DeliberationConfig(BaseModel):
     vote_retry: VoteRetryConfig = Field(
         default_factory=VoteRetryConfig,
         description="Vote extraction retry settings",
+    )
+    context_compression: ContextCompressionConfig = Field(
+        default_factory=ContextCompressionConfig,
+        description="Context compression settings for large debates",
     )
 
 

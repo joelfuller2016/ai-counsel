@@ -136,6 +136,62 @@ class TranscriptManager:
         else:
             lines.append("**Winning Option:** No winner (tie or insufficient votes)")
 
+        # Issue #27: Add weighted tally if available
+        if result.voting_result.weighted_tally:
+            lines.extend(
+                [
+                    "",
+                    "### Confidence-Weighted Tally",
+                    "",
+                ]
+            )
+            sorted_weighted = sorted(
+                result.voting_result.weighted_tally.items(), key=lambda x: x[1], reverse=True
+            )
+            for option, weight in sorted_weighted:
+                lines.append(f"- **{option}**: {weight:.2f} (sum of confidence scores)")
+
+        # Issue #28: Add abstain statistics if any
+        if result.voting_result.abstain_count > 0:
+            lines.extend(
+                [
+                    "",
+                    "### Abstain Statistics",
+                    "",
+                    f"**Total Abstain Votes:** {result.voting_result.abstain_count}",
+                    "",
+                ]
+            )
+            if result.voting_result.abstain_rate_by_model:
+                lines.append("**Abstain Rate by Model:**")
+                for model, rate in result.voting_result.abstain_rate_by_model.items():
+                    if rate > 0:
+                        lines.append(f"- {model}: {rate:.1%}")
+
+        # Issue #33: Add vote change tracking if any changes detected
+        if result.voting_result.vote_changes:
+            lines.extend(
+                [
+                    "",
+                    "### Vote Changes",
+                    "",
+                    f"**Vote Stability:** {result.voting_result.vote_stability:.1%}",
+                    "",
+                ]
+            )
+            for change in result.voting_result.vote_changes:
+                lines.extend(
+                    [
+                        f"- **{change.participant}** changed vote:",
+                        f"  - From: {change.previous_option} (round {change.from_round}, confidence: {change.previous_confidence:.2f})",
+                        f"  - To: {change.new_option} (round {change.to_round}, confidence: {change.new_confidence:.2f})",
+                    ]
+                )
+                if change.reasoning:
+                    reasoning_preview = change.reasoning[:200] + ("..." if len(change.reasoning) > 200 else "")
+                    lines.append(f"  - Reasoning: {reasoning_preview}")
+                lines.append("")
+
         lines.extend(
             [
                 "",

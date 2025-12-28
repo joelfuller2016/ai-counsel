@@ -1,0 +1,130 @@
+# AI Counsel Kubernetes Horizontal Pod Autoscaler
+# ============================================================
+# Automatically scales AI Counsel pods based on resource usage.
+# Supports CPU, memory, and custom metrics.
+#
+# Prerequisites:
+#   - Metrics Server must be installed in the cluster
+#   - For custom metrics: Prometheus Adapter or similar
+#
+# Usage:
+#   kubectl apply -f kubernetes/hpa.yaml
+#   kubectl get hpa ai-counsel -n ai-counsel
+#   kubectl describe hpa ai-counsel -n ai-counsel
+# ============================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-counsel
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+    component: autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-counsel
+
+  # Scaling boundaries
+  minReplicas: 2
+  maxReplicas: 10
+
+  # Scaling metrics
+  metrics:
+    # CPU-based scaling
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    # Memory-based scaling
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+    # Custom metric example (requires Prometheus Adapter)
+    # Uncomment if you have custom metrics configured
+    # - type: Pods
+    #   pods:
+    #     metric:
+    #       name: ai_counsel_active_deliberations
+    #     target:
+    #       type: AverageValue
+    #       averageValue: "5"
+
+  # Scaling behavior configuration
+  behavior:
+    # Scale up quickly when needed
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+      selectPolicy: Max
+
+    # Scale down slowly to avoid thrashing
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 120
+        - type: Percent
+          value: 25
+          periodSeconds: 120
+      selectPolicy: Min
+
+---
+# Pod Disruption Budget
+# Ensures minimum availability during voluntary disruptions
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-counsel-pdb
+  namespace: ai-counsel
+  labels:
+    app: ai-counsel
+spec:
+  minAvailable: 1  # At least 1 pod must always be available
+  selector:
+    matchLabels:
+      app: ai-counsel
+
+---
+# Vertical Pod Autoscaler (optional)
+# Automatically adjusts resource requests/limits
+# Requires VPA to be installed in the cluster
+#
+# apiVersion: autoscaling.k8s.io/v1
+# kind: VerticalPodAutoscaler
+# metadata:
+#   name: ai-counsel-vpa
+#   namespace: ai-counsel
+# spec:
+#   targetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: ai-counsel
+#   updatePolicy:
+#     updateMode: "Auto"  # or "Off" for recommendations only
+#   resourcePolicy:
+#     containerPolicies:
+#       - containerName: ai-counsel
+#         minAllowed:
+#           cpu: "100m"
+#           memory: "256Mi"
+#         maxAllowed:
+#           cpu: "4"
+#           memory: "8Gi"
+#         controlledResources: ["cpu", "memory"]
