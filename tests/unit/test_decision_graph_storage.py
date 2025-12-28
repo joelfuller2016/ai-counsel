@@ -1,11 +1,11 @@
 """Unit tests for decision graph storage layer."""
+
 import sqlite3
 from datetime import datetime
 
 import pytest
 
-from decision_graph.schema import (DecisionNode, DecisionSimilarity,
-                                   ParticipantStance)
+from decision_graph.schema import DecisionNode, DecisionSimilarity, ParticipantStance
 from decision_graph.storage import DecisionGraphStorage
 from deliberation.convergence import ConvergenceDetector
 
@@ -974,7 +974,7 @@ class TestImpasseDetection:
         ]
 
         result = detector.check_convergence(round3, round2, round_number=3)
-        
+
         assert result.status == "diverging"
         assert detector.consecutive_divergent_count == 1
 
@@ -1029,7 +1029,7 @@ class TestImpasseDetection:
         ]
 
         result = detector.check_convergence(round3, round2, round_number=3)
-        
+
         assert detector.consecutive_divergent_count == 0
 
     def test_consecutive_divergent_count_resets_on_refining(self):
@@ -1083,7 +1083,7 @@ class TestImpasseDetection:
         ]
 
         result = detector.check_convergence(round3, round2, round_number=3)
-        
+
         # Should be refining (similarity between thresholds)
         assert result.status == "refining"
         assert detector.consecutive_divergent_count == 0
@@ -1398,7 +1398,7 @@ class TestImpasseDetection:
         ]
 
         result = detector.check_convergence(round4, round3, round_number=4)
-        
+
         # Should reset counter
         assert result.status == "refining"
         assert detector.consecutive_divergent_count == 0

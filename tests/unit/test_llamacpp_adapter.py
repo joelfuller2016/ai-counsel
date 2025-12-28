@@ -15,6 +15,7 @@ Test cases cover:
 4. Error handling for malformed output
 5. Context and prompt integration
 """
+
 import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -229,7 +230,9 @@ llama_print_timings: total time = 100 ms
 
     @pytest.mark.asyncio
     @patch("adapters.base.asyncio.create_subprocess_exec")
-    async def test_should_raise_runtime_error_when_process_fails(self, mock_subprocess, tmp_path):
+    async def test_should_raise_runtime_error_when_process_fails(
+        self, mock_subprocess, tmp_path
+    ):
         """Test process error handling."""
         # Create a temporary model file
         model_file = tmp_path / "model.gguf"
@@ -251,7 +254,9 @@ llama_print_timings: total time = 100 ms
 
     @pytest.mark.asyncio
     @patch("adapters.base.asyncio.create_subprocess_exec")
-    async def test_should_include_context_when_provided(self, mock_subprocess, tmp_path):
+    async def test_should_include_context_when_provided(
+        self, mock_subprocess, tmp_path
+    ):
         """Test context is prepended to prompt."""
         # Create a temporary model file
         model_file = tmp_path / "model.gguf"
@@ -417,7 +422,9 @@ class TestLlamaCppAutoDiscovery:
 
         assert resolved == str(model_file)
 
-    def test_should_resolve_relative_path_when_model_exists(self, tmp_path, monkeypatch):
+    def test_should_resolve_relative_path_when_model_exists(
+        self, tmp_path, monkeypatch
+    ):
         """Test that relative paths are resolved to absolute paths."""
         model_file = tmp_path / "test-model.gguf"
         model_file.touch()
@@ -559,6 +566,7 @@ class TestLlamaCppAutoDiscovery:
     def test_should_expand_tilde_in_search_paths(self, tmp_path, monkeypatch):
         """Test that ~ in search paths is expanded to home directory."""
         import sys
+
         # Mock home directory - Windows uses USERPROFILE, Unix uses HOME
         if sys.platform == "win32":
             monkeypatch.setenv("USERPROFILE", str(tmp_path))
@@ -578,7 +586,9 @@ class TestLlamaCppAutoDiscovery:
         expanded_paths = adapter._get_expanded_search_paths()
         assert any(str(p) == str(models_dir) for p in expanded_paths)
 
-    def test_should_use_env_var_for_additional_search_paths(self, tmp_path, monkeypatch):
+    def test_should_use_env_var_for_additional_search_paths(
+        self, tmp_path, monkeypatch
+    ):
         """Test LLAMA_CPP_MODEL_PATH environment variable adds search paths."""
         models_dir = tmp_path / "models"
         models_dir.mkdir()
@@ -595,7 +605,9 @@ class TestLlamaCppAutoDiscovery:
         resolved = adapter._resolve_model_path("test")
         assert resolved == str(model_file)
 
-    def test_should_support_colon_separated_paths_in_env_var(self, tmp_path, monkeypatch):
+    def test_should_support_colon_separated_paths_in_env_var(
+        self, tmp_path, monkeypatch
+    ):
         """Test LLAMA_CPP_MODEL_PATH supports colon-separated paths."""
         dir1 = tmp_path / "dir1"
         dir2 = tmp_path / "dir2"
@@ -607,7 +619,9 @@ class TestLlamaCppAutoDiscovery:
         model1.touch()
         model2.touch()
 
-        import os; monkeypatch.setenv("LLAMA_CPP_MODEL_PATH", f"{dir1}{os.pathsep}{dir2}")
+        import os
+
+        monkeypatch.setenv("LLAMA_CPP_MODEL_PATH", f"{dir1}{os.pathsep}{dir2}")
 
         adapter = LlamaCppAdapter(
             args=["-m", "{model}", "-p", "{prompt}"],

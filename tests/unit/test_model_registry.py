@@ -1,4 +1,5 @@
 """Tests for the model registry utility."""
+
 import pytest
 
 from models.config import Config, load_config
@@ -517,7 +518,10 @@ def test_validate_model_error_message_lists_available_models():
 
     assert result.valid is False
     # Should list available models since no similar ones
-    assert "Available models:" in result.error_message or "alpha" in result.error_message.lower()
+    assert (
+        "Available models:" in result.error_message
+        or "alpha" in result.error_message.lower()
+    )
 
 
 def test_validate_model_max_suggestions_parameter():
